@@ -798,29 +798,25 @@ function ttsStatus(msg){ let d=document.getElementById('tts-status');
   if(msg){ setTimeout(function(){ if(d && d.textContent===msg) d.remove(); },3500); } }
 function speak(text,rate){
   if(!("speechSynthesis" in window)){ ttsStatus("⚠️ Dieser Browser unterstützt keine Sprachausgabe"); return; }
-  speechSynthesis.cancel();
-  /* iOS-Fix: nach cancel() kurz warten, sonst schluckt iOS die Aussprache */
-  setTimeout(function(){
+  /* iOS-Fix 2.0: SYNCHRON im Antipp-Moment sprechen (kein cancel, kein setTimeout –
+     beides kann iOS dazu bringen, den Ton zu verwerfen). Mehrfaches Tippen reiht sich an. */
+  try{
     var u=new SpeechSynthesisUtterance(text);
     var ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
     var v=ios? null : pickVoice();   /* iOS: System-Stimme nutzen, voice setzen kann stumm schalten */
     if(v){ u.voice=v; u.lang=v.lang; } else { u.lang=getVoicePref(); }
     u.rate=rate||0.98; u.pitch=1.0;
     u.onstart=function(){ ttsStatus("🔊 Sprachausgabe läuft…"); };
-    u.onerror=function(){ ttsStatus("⚠️ Sprachausgabe blockiert – prüfe den Stummschalter (orangefarbener Schalter an der Seite!) und die Lautstärke"); };
+    u.onerror=function(){ ttsStatus("⚠️ Sprachausgabe blockiert – siehe Geräte-Checkliste im Chat"); };
     speechSynthesis.speak(u);
-    setTimeout(function(){
-      if(!speechSynthesis.speaking && !speechSynthesis.pending){
-        ttsStatus("⚠️ Kein Ton? 1) Stummschalter an der Seite des iPhones (orange = aus!) 2) Lautstärke-Taste drücken während der Wiedergabe");
-      }
-    },1200);
-  },120); }
+  }catch(e){ ttsStatus("⚠️ Sprachausgabe-Fehler: "+e.message); } }
 function playSentence(rate){ speak(listenTarget,rate); }
 function playTestTone(){
   try{
     var AC=window.AudioContext||window.webkitAudioContext;
     if(!AC){ ttsStatus("⚠️ Audio-Test wird von diesem Browser nicht unterstützt"); return; }
     var ctx=new AC();
+    if(ctx.state==="suspended" && ctx.resume) ctx.resume();
     var osc=ctx.createOscillator(); var gain=ctx.createGain();
     osc.frequency.value=600; gain.gain.value=0.25;
     osc.connect(gain); gain.connect(ctx.destination);
