@@ -808,6 +808,13 @@ function speak(text,rate){
     u.rate=rate||0.98; u.pitch=1.0;
     u.onstart=function(){ ttsStatus("🔊 Sprachausgabe läuft…"); };
     u.onerror=function(){ ttsStatus("⚠️ Sprachausgabe blockiert – siehe Geräte-Checkliste im Chat"); };
+    if(ios){
+      /* iOS-Fix 3.0 (Aufwärmen): Die ERSTE Äußerung nach Seitenstart ist auf iOS oft stumm.
+         Trick: eine unsichtbare Null-Äußerung vorausschicken, dann spricht die echte. */
+      var warm=new SpeechSynthesisUtterance(" ");
+      warm.volume=0; warm.rate=2;
+      speechSynthesis.speak(warm);
+    }
     speechSynthesis.speak(u);
   }catch(e){ ttsStatus("⚠️ Sprachausgabe-Fehler: "+e.message); } }
 function playSentence(rate){ speak(listenTarget,rate); }
