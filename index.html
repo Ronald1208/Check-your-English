@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1226">
+<title>English Trainer</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"English Trainer","short_name":"Trainer","display":"standalone","background_color":"%230f1226","theme_color":"%230f1226","start_url":"."}'>
+<style>
+  :root{
+    --bg1:#0f1226; --bg2:#1a1f3d; --card:#ffffff; --ink:#1c2040;
+    --muted:#6b7191; --accent:#6c5ce7; --accent2:#8e7bff; --good:#00b894; --bad:#e17055;
+    --mid:#f6b93b; --ring:rgba(108,92,231,.35);
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,"Segoe UI",system-ui,sans-serif;
+    background:radial-gradient(1200px 800px at 15% 5%, #2b2f63 0%, transparent 55%),
+               radial-gradient(1000px 700px at 90% 100%, #45286b 0%, transparent 50%),
+               linear-gradient(160deg, var(--bg1), var(--bg2));
+    color:var(--ink); display:flex; justify-content:center;
+  }
+  .app{width:100%; max-width:560px; min-height:100%; display:flex; flex-direction:column; padding:18px 16px 96px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; color:#cfd3ff; font-size:.85rem; margin-bottom:12px; gap:8px; flex-wrap:wrap;}
+  .topbar .chip2{background:rgba(255,255,255,.08); padding:6px 12px; border-radius:999px; white-space:nowrap;}
+  .view{display:none; animation:pop .3s ease;}
+  .view.active{display:block;}
+  @keyframes pop{from{transform:translateY(10px); opacity:0;} to{transform:none; opacity:1;}}
+  .card{
+    background:var(--card); border-radius:20px; padding:26px 22px;
+    box-shadow:0 20px 50px rgba(5,8,30,.5); margin-bottom:16px;
+  }
+  .badge{display:inline-block; font-size:.7rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--accent); background:rgba(108,92,231,.12); border-radius:999px; padding:5px 11px; margin-bottom:14px;}
+  h1{font-size:1.4rem; line-height:1.3; margin-bottom:8px;}
+  h2{font-size:1.1rem; margin-bottom:6px;}
+  h3{font-size:.95rem; margin:14px 0 4px; color:var(--accent);}
+  .sub{color:var(--muted); font-size:.92rem; margin-bottom:18px; line-height:1.5;}
+  textarea{width:100%; min-height:100px; resize:vertical; border:2px solid #e3e5f2; border-radius:14px;
+    padding:12px 14px; font:inherit; font-size:1rem; color:var(--ink); outline:none; transition:border .2s;}
+  textarea:focus{border-color:var(--accent);}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; user-select:none;
+    border:none; border-radius:14px; padding:13px 18px; font:inherit; font-weight:600; font-size:.95rem;
+    transition:transform .1s, box-shadow .2s;}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 8px 20px rgba(108,92,231,.35);}
+  .btn-good{background:var(--good); color:#fff;}
+  .btn-mid{background:var(--mid); color:#5a4200;}
+  .btn-bad{background:var(--bad); color:#fff;}
+  .btn-ghost{background:transparent; color:var(--muted); border:2px solid #e3e5f2;}
+  .btn-ghost:disabled{opacity:.4; cursor:default;}
+  .btn-small{padding:9px 14px; font-size:.85rem; border-radius:11px;}
+  .btn-row{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;}
+  .btn-row .btn{flex:1;}
+  kbd{background:#eceefb; border-radius:6px; padding:1px 7px; font-size:.75rem; color:var(--accent);}
+  .feedback{border-radius:14px; padding:14px 16px; margin-top:14px; font-size:.93rem; line-height:1.55;}
+  .feedback.ok{background:#e6f9f3; border:1px solid #b8ecdf;}
+  .feedback.mid{background:#fffbe6; border:1px solid #f7e9b0;}
+  .feedback.miss{background:#fff4e0; border:1px solid #f7e3b3;}
+  .feedback .sample{font-weight:600; margin-top:6px;}
+  .feedback .note{color:var(--muted); font-size:.83rem; margin-top:8px;}
+  .hit{color:#019170; font-weight:700;} .missw{color:#c0392b; font-weight:700; text-decoration:underline wavy;}
+  .verdict-row{display:flex; gap:8px; margin-top:14px;}
+  .verdict-row .btn{flex:1; padding:12px 6px; font-size:.85rem;}
+  .hint{color:var(--muted); font-size:.78rem; text-align:center; margin-top:14px;}
+  .hidden{display:none;}
+  .tabbar{position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:560px;
+    display:flex; background:rgba(20,23,50,.88); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border-radius:20px 20px 0 0; padding:10px 3px calc(10px + env(safe-area-inset-bottom));}
+  .tab{flex:1; text-align:center; color:#9aa0c8; font-size:.58rem; cursor:pointer; padding:4px 0; border-radius:12px; transition:.2s;}
+  .tab .ic{font-size:1.1rem; display:block; margin-bottom:2px;}
+  .tab.active{color:#fff; background:rgba(255,255,255,.1);}
+  .segment{display:flex; gap:8px; margin-bottom:16px;}
+  .segment button{flex:1; padding:10px 6px; border-radius:12px; border:2px solid rgba(255,255,255,.25);
+    background:transparent; color:#cfd3ff; font:inherit; font-weight:600; font-size:.85rem; cursor:pointer;}
+  .segment button.active{background:rgba(255,255,255,.14); color:#fff; border-color:transparent;}
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:6px;}
+  .stat-box{background:rgba(255,255,255,.07); border-radius:16px; padding:14px; color:#e8e9ff;}
+  .stat-box .n{font-size:1.4rem; font-weight:700;}
+  .stat-box .l{font-size:.73rem; color:#aab0dd; margin-top:2px;}
+  .chart{display:flex; align-items:flex-end; gap:8px; height:110px; margin-top:14px;}
+  .bar{flex:1; background:linear-gradient(180deg,var(--accent),var(--accent2)); border-radius:8px 8px 3px 3px;
+    min-height:4px; position:relative; transition:height .4s;}
+  .bar span{position:absolute; bottom:-20px; left:0; right:0; text-align:center; font-size:.66rem; color:#aab0dd;}
+  .chart-wrap{margin-bottom:26px;}
+  .goal{margin-top:4px; height:10px; background:rgba(255,255,255,.12); border-radius:99px; overflow:hidden;}
+  .goal i{display:block; height:100%; background:linear-gradient(90deg,var(--good),#55efc4); width:0%; transition:width .4s;}
+  textarea.io{min-height:70px; font-size:.78rem; font-family:ui-monospace,monospace;}
+  .q-opt{display:block; width:100%; text-align:left; margin-top:10px; padding:13px 16px; border-radius:13px;
+    border:2px solid #e3e5f2; background:#fff; font:inherit; font-size:.95rem; cursor:pointer;}
+  .q-opt:disabled{cursor:default;}
+  .q-opt.correct{border-color:var(--good); background:#e6f9f3;}
+  .q-opt.wrong{border-color:var(--bad); background:#fdecea;}
+  .lookup-item{padding:12px 0; border-bottom:1px solid #eef0f8;}
+  .lookup-item:last-child{border-bottom:none;}
+  .lookup-item summary{cursor:pointer; font-weight:700; font-size:1rem; list-style:none; display:flex; align-items:center; gap:8px;}
+  .lookup-item summary::-webkit-details-marker{display:none;}
+  .lookup-item .de{color:var(--muted); margin-top:6px; font-size:.9rem;}
+  .lookup-item .t{font-size:.88rem; color:var(--ink); margin-top:4px; line-height:1.45;}
+  .lookup-item .lvl{font-size:.62rem; font-weight:700; background:rgba(108,92,231,.12); color:var(--accent);
+    border-radius:999px; padding:2px 8px;}
+  .lookup-item .m{font-size:.7rem; font-weight:700; color:var(--good);}
+  .addbtn{margin-left:auto; border:2px solid var(--accent); color:var(--accent); background:#fff;
+    border-radius:999px; padding:3px 12px; font:inherit; font-size:.75rem; font-weight:700; cursor:pointer;}
+  .addbtn.on{border-color:var(--good); color:var(--good);}
+  input.search{width:100%; padding:12px 14px; border:2px solid #e3e5f2; border-radius:13px; font:inherit; outline:none;}
+  input.search:focus{border-color:var(--accent);}
+  .gap-sentence{font-size:1.12rem; line-height:1.6; margin:6px 0 4px;}
+  .story-text{font-size:1.02rem; line-height:1.75; white-space:pre-line;}
+  .chip{display:inline-block; background:rgba(108,92,231,.1); color:var(--accent); font-weight:600;
+    border-radius:999px; padding:4px 12px; font-size:.8rem; margin:2px 4px 2px 0;}
+  select{font:inherit; padding:6px 10px; border-radius:10px; border:2px solid #e3e5f2; background:#fff; color:var(--ink);}
+  .progress-dots{display:flex; gap:6px; margin-top:10px;}
+  .pdot{height:8px; flex:1; border-radius:99px; background:#e3e5f2;}
+  .pdot.done{background:var(--accent);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <span>🎓 English Trainer</span>
+    <span class="chip2" id="level-chip">🎓 Level: –</span>
+    <span class="chip2" id="streak">🔥 0 Tage</span>
+  </div>
+
+  <!-- ═══ VOKABELN ═══ -->
+  <div class="view active" id="view-vocab">
+    <div class="card hidden" id="voc-card">
+      <span class="badge" id="voc-badge">Vokabeln</span>
+      <h1 id="voc-title"></h1>
+      <p class="sub" id="voc-prompt"></p>
+      <textarea id="voc-answer" placeholder="Deine Antwort…" spellcheck="false"></textarea>
+      <div class="btn-row"><button class="btn btn-primary" id="voc-check" onclick="vocCheck()">🔎 Prüfen</button></div>
+      <div id="voc-result"></div>
+      <div class="verdict-row hidden" id="voc-verdict">
+        <button class="btn btn-good" onclick="vocVerdict('ok')">✅ Sicher <kbd>1</kbd></button>
+        <button class="btn btn-mid" onclick="vocVerdict('mid')">😐 Unsicher <kbd>2</kbd></button>
+        <button class="btn btn-bad" onclick="vocVerdict('again')">🔁 Nochmal <kbd>3</kbd></button>
+      </div>
+    </div>
+    <div class="card" id="voc-start">
+      <span class="badge">Vokabeln · Wiederholungs-Kalender aktiv</span>
+      <h1>Vokabel-Training</h1>
+      <p class="sub">Zuerst kommen Karten, die heute <b>fällig</b> sind (⏰): deine <b>gemerkten Wörter</b>, deine <b>Level-Vokabeln</b> und die Kernkarten. ✅ Sicher → Karte kommt nach immer längeren Abständen wieder (1 → 3 → 7 → 14 → 30 Tage).</p>
+      <div class="btn-row"><button class="btn btn-primary" onclick="vocStart(false)">▶️ Training starten</button></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost btn-small" onclick="vocStart(true)">💪 Nur sitzende wiederholen</button>
+        <button class="btn btn-ghost btn-small" onclick="dailyMix()">⚡ Tagesmix</button>
+      </div>
+      <p class="hint" id="voc-due-info"></p>
+      <p class="hint">Tastatur: <kbd>Enter</kbd> prüfen · <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> bewerten</p>
+    </div>
+  </div>
+
+  <!-- ═══ HÖREN ═══ -->
+  <div class="view" id="view-listen">
+    <div class="card">
+      <span class="badge" id="listen-badge">Hörverständnis</span>
+      <h1>Diktat-Training</h1>
+      <p class="sub">Höre den Satz und schreibe auf, was du verstehst. Stimme:
+        <select id="voice-pref" onchange="setVoicePref(this.value)">
+          <option value="auto">✨ Auto (beste Stimme)</option>
+          <option value="en-US">🇺🇸 Amerikanisch</option>
+          <option value="en-GB">🇬🇧 Britisch</option>
+        </select></p>
+      <div class="btn-row" style="margin-top:0;">
+        <button class="btn btn-primary btn-small" onclick="playSentence()">▶️ Anhören</button>
+        <button class="btn btn-ghost btn-small" onclick="playSentence(0.6)">🐢 Langsamer</button>
+        <button class="btn btn-ghost btn-small" onclick="genDictation()">🎲 Zufallssatz</button>
+      </div>
+      <textarea id="listen-answer" placeholder="Was hast du gehört?" style="margin-top:14px;" spellcheck="false"></textarea>
+      <div class="btn-row"><button class="btn btn-primary" id="listen-check" onclick="listenCheck()">🔎 Prüfen</button></div>
+      <div id="listen-result"></div>
+      <div class="verdict-row hidden" id="listen-verdict">
+        <button class="btn btn-good" onclick="listenVerdict('ok')">✅ Sicher <kbd>1</kbd></button>
+        <button class="btn btn-mid" onclick="listenVerdict('mid')">😐 Unsicher <kbd>2</kbd></button>
+        <button class="btn btn-bad" onclick="listenVerdict('again')">🔁 Nochmal <kbd>3</kbd></button>
+      </div>
+    </div>
+    <div class="card"><p class="sub" style="margin:0;">🔊 <b>Tipps für natürliche Stimmen:</b> Auf dem iPhone klingt die Apple-Stimme automatisch natürlicher. Auf dem PC: Windows-Einstellungen → Zeit &amp; Sprache → Sprache → weitere Stimmen herunterladen, und die App am besten in <b>Microsoft Edge</b> öffnen (dort gibt es „Natural“-Stimmen). Die App wählt automatisch die beste verfügbare Stimme.</p></div>
+  </div>
+
+  <!-- ═══ LESEN ═══ -->
+  <div class="view" id="view-read">
+    <div class="segment">
+      <button id="seg-ex" class="active" onclick="readMode('ex')">Übungstexte</button>
+      <button id="seg-st" onclick="readMode('st')">🎙️ Geschichten mit Vorlesen</button>
+    </div>
+    <div class="card" id="read-card"></div>
+    <div class="card hidden" id="story-card"></div>
+  </div>
+
+  <!-- ═══ GRAMMATIK ═══ -->
+  <div class="view" id="view-gram">
+    <div class="card" id="gram-menu">
+      <span class="badge">Grammatik · unendlich viele Aufgaben</span>
+      <h1>Grammatik-Training</h1>
+      <p class="sub">Diese Übungen erzeugt der Computer neu – du kannst sie nicht „durchspielen“.</p>
+      <div class="btn-row" style="margin-top:6px;"><button class="btn btn-primary" onclick="gramVerbs()">🔤 Unregelmäßige Verben</button></div>
+      <div class="btn-row" style="margin-top:10px;"><button class="btn btn-primary" onclick="gramGap()">🧩 Lückentexte</button></div>
+      <div class="btn-row" style="margin-top:10px;"><button class="btn btn-primary" onclick="gramTransform()">🔄 Sätze umformen</button></div>
+      <p class="hint">Tipp: Fang mit den Verben an – die brauchen schlicht Wiederholung.</p>
+    </div>
+    <div class="card hidden" id="gram-card"></div>
+  </div>
+
+  <!-- ═══ SCHREIBEN ═══ -->
+  <div class="view" id="view-write">
+    <div class="card">
+      <span class="badge">Freies Schreiben · Output-Training</span>
+      <h1 id="write-topic">Mini-Aufsatz</h1>
+      <p class="sub" id="write-prompt"></p>
+      <div id="write-targets" style="margin-bottom:12px;"></div>
+      <textarea id="write-answer" style="min-height:160px;" placeholder="Schreib frei drauflos – Fehler sind erlaubt und sogar nützlich!" spellcheck="false"></textarea>
+      <div class="btn-row"><button class="btn btn-primary" id="write-done" onclick="writeDone()">✍️ Fertig – Feedback zeigen</button></div>
+      <div id="write-result"></div>
+      <div class="verdict-row hidden" id="write-verdict">
+        <button class="btn btn-good" onclick="writeVerdict('ok')">✅ Gut <kbd>1</kbd></button>
+        <button class="btn btn-mid" onclick="writeVerdict('mid')">😐 Geht besser <kbd>2</kbd></button>
+        <button class="btn btn-bad" onclick="writeVerdict('again')">🔁 Nochmal <kbd>3</kbd></button>
+      </div>
+      <div class="btn-row"><button class="btn btn-ghost btn-small" onclick="newPrompt()">🎲 Neues Thema</button></div>
+    </div>
+    <div class="card"><p class="sub" style="margin:0;">💡 Warum Schreiben? Wenn dir ein Wort fehlt, merkst du es dir besonders gut – das nennt die Forschung die <b>Noticing-Funktion</b> (Swain).</p></div>
+  </div>
+
+  <!-- ═══ MEHR (Fortschritt + Level + Wortschatz) ═══ -->
+  <div class="view" id="view-progress">
+    <div class="card" style="background:rgba(255,255,255,.06); color:#e8e9ff;">
+      <span class="badge" style="color:#b3a7ff; background:rgba(142,123,255,.15);">Level &amp; Einstufung</span>
+      <div class="sub" style="color:#aab0dd; margin-bottom:10px;">Aktuelles Level: <b id="pf-level" style="color:#fff;">–</b> · Wörter im Training: <b id="pf-words" style="color:#fff;">0</b></div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-small" onclick="startTest()">🧪 Einstufungstest (ca. 3 Min)</button>
+      </div>
+      <div class="btn-row" style="margin-top:10px;">
+        <select id="level-select" onchange="setLevelManual(this.value)" style="flex:1;">
+          <option value="">Level manuell wählen…</option>
+          <option value="A1">A1 – Anfänger</option><option value="A2">A2 – Grundlagen</option>
+          <option value="B1">B1 – Mittelstufe</option><option value="B2">B2 – Fortgeschritten</option>
+          <option value="C1">C1 – Sehr gut</option><option value="C2">C2 – Muttersprachenniveau</option>
+        </select>
+      </div>
+      <div id="test-area" class="hidden" style="margin-top:16px;"></div>
+    </div>
+    <div class="card" style="background:rgba(255,255,255,.06); color:#e8e9ff;">
+      <span class="badge" style="color:#b3a7ff; background:rgba(142,123,255,.15);">💡 Coach</span>
+      <div id="coach" style="font-size:.9rem; line-height:1.6; color:#e8e9ff;">…</div>
+    </div>
+    <div class="card" style="background:rgba(255,255,255,.06); color:#e8e9ff;">
+      <span class="badge" style="color:#b3a7ff; background:rgba(142,123,255,.15);">Fortschritt</span>
+      <div class="sub" style="color:#aab0dd; margin-bottom:10px;">Tagesziel: <b id="goal-text" style="color:#fff;">0/12</b> Übungen heute</div>
+      <div class="goal"><i id="goal-bar"></i></div>
+      <div class="stat-grid" style="margin-top:18px;" id="stat-grid"></div>
+      <div class="chart-wrap"><div class="chart" id="chart"></div></div>
+      <p class="hint" style="color:#7d84b8; text-align:left;">💡 <span id="mastery-count"></span> von <span id="mastery-total"></span> Karten sitzen · <span id="due-count"></span> heute fällig</p>
+    </div>
+    <div class="card" style="background:rgba(255,255,255,.06); color:#e8e9ff;">
+      <h2 style="color:#fff;">💾 Fortschritt sichern</h2>
+      <p class="sub" style="color:#aab0dd;">iPhone kann Daten nach 7 Tagen Nichtbenutzung löschen – kopiere deinen Stand regelmäßig hier raus.</p>
+      <textarea class="io" id="io-box" placeholder="Export: Knopf drücken → Text kopieren. Import: Text einfügen → Import drücken."></textarea>
+      <div class="btn-row">
+        <button class="btn btn-ghost btn-small" style="color:#cfd3ff; border-color:rgba(255,255,255,.25);" onclick="exportProgress()">📤 Export</button>
+        <button class="btn btn-ghost btn-small" style="color:#cfd3ff; border-color:rgba(255,255,255,.25);" onclick="importProgress()">📥 Import</button>
+      </div>
+    </div>
+    <div class="card" style="background:rgba(255,255,255,.06); color:#e8e9ff;">
+      <h2 style="color:#fff;">🔍 Wortschatz</h2>
+      <p class="sub" style="color:#aab0dd;">Auf ein Wort tippen → Übersetzung erscheint. Mit ➕ merkst du es dir fürs Training.</p>
+      <input class="search" id="lookup-search" placeholder="🔎 Suchen…" oninput="renderLookup()">
+      <div id="lookup-list" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- Tab-Bar -->
+  <div class="tabbar">
+    <div class="tab active" data-v="view-vocab" onclick="showView('view-vocab')"><span class="ic">📇</span>Vokabeln</div>
+    <div class="tab" data-v="view-listen" onclick="showView('view-listen')"><span class="ic">🎧</span>Hören</div>
+    <div class="tab" data-v="view-read" onclick="showView('view-read')"><span class="ic">📖</span>Lesen</div>
+    <div class="tab" data-v="view-gram" onclick="showView('view-gram')"><span class="ic">🛠️</span>Grammatik</div>
+    <div class="tab" data-v="view-write" onclick="showView('view-write')"><span class="ic">✍️</span>Schreiben</div>
+    <div class="tab" data-v="view-progress" onclick="showView('view-progress')"><span class="ic">📈</span>Mehr</div>
+  </div>
+</div>
+
+<script>
+/* Selbst-Diagnose: zeigt App-Fehler sichtbar als roten Banner (bleibt dauerhaft drin) */
+window.addEventListener('error',function(e){
+  var d=document.getElementById('errbox');
+  if(!d){ d=document.createElement('div'); d.id='errbox'; document.body.appendChild(d); }
+  d.style.cssText='position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:10px 14px;font:12px monospace;z-index:99999;white-space:pre-wrap;';
+  d.textContent='⚠️ App-Fehler: '+(e.message||e.error||'unbekannt')+' (Zeile '+(e.lineno||'?')+') – bitte melden!';
+});
+</script>
+<script>
+"use strict";
+/* ══════════ LEVEL & VOKABELN-NIVEAUS ══════════ */
+const LEVELS=["A1","A2","B1","B2","C1","C2"];
+/* Format: [englisch, "deutsche Bedeutung", Kurzregel] */
+const LEVEL_WORDS={
+A1:[
+ ["house","das Haus","Grundwort"],["water","das Wasser","Grundwort"],["friend","der Freund / die Freundin",""],
+ ["big","groß","Gegenteil: small"],["small","klein","Gegenteil: big"],["cheap","billig","Gegenteil: expensive"],
+ ["expensive","teuer","Gegenteil: cheap"],["happy","glücklich / froh","Gegenteil: sad"],["tired","müde",""],
+ ["hungry","hungrig","thirsty = durstig"],["buy","kaufen","Verwandt: bring"],["always","immer","Häufigkeitsadverb: never, often, sometimes"],
+ ["open","öffnen","Gegenteil: close"],["close","schließen","Gegenteil: open (auch: near = nah)"],
+ ["start","anfangen / starten","Gegenteil: stop"],["stop","stoppen / aufhören","stop doing = mit etwas aufhören"],
+ ["help","helfen","help somebody (to) do"],["need","brauchen","need + Grundform oder -ing"],
+ ["want","wollen","want to + Grundform (NIE want that…)"],["like","mögen","would like = möchten (höflicher)"],
+ ["love","lieben / sehr mögen","love + -ing = etwas gern tun"],["eat","essen","Vergangenheit: ate"],
+ ["drink","trinken","Vergangenheit: drank"],["talk","reden / sprechen","talk to/with somebody"],
+ ["walk","gehen / spazieren","walk to work = zu Fuß"],["watch","schauen / beobachten","watch TV, watch a film"],
+ ["wait","warten","wait FOR somebody/something (Präposition!)"],["early","früh","Gegenteil: late"],
+ ["late","spät","be late for = zu spät kommen zu"],["together","zusammen",""]
+],
+A2:[
+ ["journey","die Reise","trip = kürzerer Ausflug"],["weather","das Wetter",""],
+ ["careful","vorsichtig / sorgfältig","carefully = Adverb"],["dangerous","gefährlich","riskant"],
+ ["decide","entscheiden","decision = die Entscheidung"],["describe","beschreiben","description"],
+ ["empty","leer","Gegenteil: full"],["full","voll","Gegenteil: empty"],["heavy","schwer (Gewicht)","Gegenteil: light"],
+ ["perhaps","vielleicht","Synonym: maybe"],["prefer","bevorzugen / lieber mögen","I prefer tea to coffee."],
+ ["prepare","vorbereiten / zubereiten","preparation"],["rich","reich","Gegenteil: poor"],["repair","reparieren","fix (umgangssprachlich)"],
+ ["lazy","faul","Gegenteil: hard-working"],["hard-working","fleißig / arbeitsam",""],
+ ["quiet","ruhig / leise","Gegenteil: loud"],["loud","laut","Gegenteil: quiet"],
+ ["clean","sauber","Gegenteil: dirty"],["dirty","schmutzig","Gegenteil: clean"],
+ ["fast","schnell","Gegenteil: slow"],["slow","langsam","slowly = Adverb"],
+ ["strong","stark","Gegenteil: weak"],["weak","schwach","Gegenteil: strong"],
+ ["remember","erinnern / sich merken","remember + -ing oder to + Grundform"],["forget","vergessen","forget to do = vergessen, etwas zu tun"],
+ ["answer","antworten / die Antwort","answer a question"],["ask","fragen","ask somebody ABOUT something"],
+ ["change","ändern / sich verändern","change one's mind = seine Meinung ändern"]
+],
+B1:[
+ ["achieve","erreichen / schaffen","achievement = der Erfolg"],["behave","sich benehmen","behaviour = das Verhalten"],
+ ["confident","selbstbewusst / zuversicht","confidence = das Selbstvertrauen"],["decrease","abnehmen / sinken","Gegenteil: increase"],
+ ["develop","entwickeln / sich entwickeln","development"],["environment","die Umwelt / Umgebung","environmental"],
+ ["experience","die Erfahrung / erleben","experienced = erfahren"],["increase","zunehmen / steigen","Gegenteil: decrease"],
+ ["patient","geduldig / der Patient","patience = die Geduld"],["polite","höflich","politeness"],
+ ["recommend","empfehlen","recommendation"],["responsible","verantwortlich","responsibility"],
+ ["succeed","Erfolg haben","success = der Erfolg"],["support","unterstützen","support = die Unterstützung"],
+ ["agree","zustimmen / übereinstimmen","agree WITH a person, agree ON a plan"],["appear","erscheinen / scheinen","it appears that …"],
+ ["arrange","organisieren / vereinbaren","arrange a meeting"],["believe","glauben / überzeugt sein","believe IN etwas (Prinzip)"],
+ ["compare","vergleichen","compare WITH/TO"],["contain","enthalten","The box contains …"],
+ ["expect","erwarten","I expect (that) …"],["explain","erklären","explain something TO somebody"],
+ ["mention","erwähnen","don't mention it = kein Problem!"],["offer","anbieten / das Angebot","offer somebody something"],
+ ["prevent","verhindern","prevent somebody FROM doing"],["provide","bereitstellen / liefern","provide somebody WITH something"],
+ ["manage","schaffen / leiten","manage to do = es schaffen, etwas zu tun"]
+],
+B2:[
+ ["accurate","präzise / genau","accuracy = Genauigkeit"],["aware","sich bewusst","be aware of = sich bewusst sein"],
+ ["benefit","der Vorteil / Nutzen","beneficial = nützlich"],["challenge","die Herausforderung / herausfordern","challenging = anspruchsvoll"],
+ ["consequence","die Folge / Konsequenz","as a consequence = infolgedessen"],["demand","fordern / die Nachfrage","in demand = gefragt"],
+ ["essential","wesentlich / unerlässlich","essence = der Kern"],["flexible","flexibel / anpassungsfähig","flexibility"],
+ ["negotiate","verhandeln","negotiation"],["obvious","offensichtlich / einleuchtend","obviously = offensichtlich"],
+ ["persuade","überzeugen (jemanden tun zu lassen)","convince = von etwas überzeugen"],["risk","das Risiko / riskieren","risky = riskant"],
+ ["assume","annehmen","I assume (that) … = ich nehme an"],["demonstrate","demonstrieren / nachweisen","Demonstration"],
+ ["distinguish","unterscheiden","distinguish BETWEEN A and B"],["gather","sammeln / zusammenkommen","gather information"],
+ ["identify","identifizieren","identification = Ausweis"],["obtain","erlangen / bekommen (formell)","formeller als get"],
+ ["occur","vorkommen / geschehen","It occurred to me = mir kam der Gedanke"],["purchase","kaufen (formell)","Gegenstück zu: buy"],
+ ["recognize","erkennen / anerkennen","recognition = die Anerkennung"],["respond","reagieren / antworten","response = die Antwort"]
+],
+C1:[
+ ["alleviate","lindern / abmildern","Schmerzen, Not, Probleme"],["ambiguous","mehrdeutig / unklar","Gegenteil: unambiguous"],
+ ["comprehensive","umfassend / vollständig","comprehend = verstehen"],["crucial","entscheidend / kritisch","synonym: vital, key"],
+ ["diminish","abnehmen / schmälern","formeller als decrease"],["emphasize","betonen / hervorheben","auch: emphasise (UK)"],
+ ["inevitable","unvermeidlich","inevitably = unweigerlich"],["predominant","vorherrschend","predominantly = überwiegend"],
+ ["rigorous","streng / gründlich","rigor = Strenge"],["substantial","erheblich / beachtlich","substance = die Substanz"],
+ ["advocate","für etwas eintreten / Verfechter","advocate FOR something"],["coherent","kohärent / zusammenhängend","Gegenteil: incoherent"],
+ ["deteriorate","sich verschlechtern","deterioration = die Verschlechterung"],["feasible","machbar / durchführbar","Feasibility study = Machbarkeitsstudie"],
+ ["profound","tiefgreifend / tief","a profound change"],["viable","funktionierend / tragfähig","a viable plan"],
+ ["widespread","weit verbreitet","widespread use"]
+],
+C2:[
+ ["astute","scharfsinnig / gewitzt","astute observation"],["clandestine","heimlich / konspirativ","formeller als secret"],
+ ["detrimental","schädlich / nachteilig","be detrimental to health"],["imperative","zwingend / unumgänglich","it is imperative that …"],
+ ["intricate","verwickelt / komplex","intricate details"],["meticulous","überaus sorgfältig / pingendlich genau","a meticulous plan"],
+ ["pervasive","allgegenwärtig / durchdringend","pervasive influence"],["unprecedented","beispiellos / nie dagewesen","unprecedented success"],
+ ["austere","streng / entbehungsreich","austere lifestyle"],["incongruous","unstimmig / unpassend","incongruous with …"],
+ ["juxtapose","nebeneinanderstellen / kontrastieren","juxtaposition"],["perpetual","dauerhaft / endlos","perpetual motion"],
+ ["serendipity","glücklicher Zufall / günstige Fügung","by serendipity"]
+]};
+/* Einstufungstest: 3 Fragen pro Level, von unten nach oben */
+const TEST=[
+ [ {q:"She ___ a teacher.",opts:["is","are","am"],c:0},
+   {q:"Was heißt „Hund“ auf Englisch?",opts:["dog","cat","house"],c:0},
+   {q:"I ___ from Germany.",opts:["am","is","are"],c:0} ],
+ [ {q:"Yesterday I ___ to the cinema.",opts:["went","go","goed"],c:0},
+   {q:"How ___ people were there?",opts:["many","much","more"],c:0},
+   {q:"This book is ___ than that one.",opts:["more interesting","interestinger","most interesting"],c:0} ],
+ [ {q:"I ___ here since 2019.",opts:["have lived","live","lived"],c:0},
+   {q:"Welcher Satz ist richtig?",opts:["Despite the rain, we went out.","Despite it was raining, we went out.","Despite of the rain, we went out."],c:0},
+   {q:"I ___ smoke, but I stopped last year.",opts:["used to","am used to","use to"],c:0} ],
+ [ {q:"By the time we arrived, the film ___.",opts:["had already started","already started","has already started"],c:0},
+   {q:"If I ___ more time, I would travel more.",opts:["had","have","will have"],c:0},
+   {q:"She said she ___ tired.",opts:["was","is","will be"],c:0} ],
+ [ {q:"Rarely ___ such talent.",opts:["have I seen","I have seen","I saw"],c:0},
+   {q:"„meticulous“ bedeutet:",opts:["überaus sorgfältig","sehr müde","sehr schnell"],c:0},
+   {q:"She ___ refused to comment.",opts:["categorically","categorical","category"],c:0} ],
+ [ {q:"„ubiquitous“ bedeutet:",opts:["überall präsent","sehr selten","einzigartig"],c:0},
+   {q:"„to be on the fence“ bedeutet:",opts:["unentschieden sein","in Gefahr sein","guter Laune sein"],c:0},
+   {q:"Not until yesterday ___ the letter.",opts:["did I receive","I received","I had received"],c:0} ]
+];
+function getLevel(){ return localStorage.getItem("et_level")||""; }
+function setLevel(l){ localStorage.setItem("et_level",l); renderLevel(); }
+function setLevelManual(l){ if(l){ setLevel(l); alert("Level gesetzt: "+l); } }
+function renderLevel(){ const l=getLevel();
+  document.getElementById("level-chip").textContent="🎓 Level: "+(l||"ungetestet");
+  document.getElementById("pf-level").textContent=l||"ungetestet";
+  document.getElementById("level-select").value=l||""; }
+
+/* ══════════ KERNDATEN (Satzbau-Karten) ══════════ */
+const DECK=[ /* unverändert – Kernkarten B1-Niveau */
+ {cat:"Adverb",title:"beforehand",de:"„im Voraus / zuvor“ – danach KEIN Objekt mehr.",re:/\bbeforehand\b/i,sample:"I prepared everything beforehand.",note:"beforehand = Adverb, ohne Objekt. Mit Objekt → before (before you leave)."},
+ {cat:"Grammatik",title:"avoid + -ing",de:"„etwas vermeiden“ – avoid mit Verb auf -ing.",re:/\bavoid(?:ed|s)?\s+\w+ing\b/i,sample:"I avoid checking my phone while studying.",note:"avoid + -ing (wie enjoy, suggest, finish). NIE avoid + to."},
+ {cat:"Verbindungswort",title:"in the end",de:"„schließlich“ – eine Entscheidung am Schluss.",re:/\bin the end\b/i,sample:"We looked at three apartments. In the end, we chose the second one.",note:"in the end = schließlich (Ergebnis), steht allein, oft mit Komma."},
+ {cat:"Verbindungswort",title:"at the end of",de:"„am Ende von etwas“ – volle Form mit of + Nomen.",re:/\bat the end of\b/i,sample:"At the end of the film, the hero dies.",note:"at the end OF = letzter Punkt einer Sache; braucht of + Nomen."},
+ {cat:"Grammatik",title:"used to",de:"„früher … (heute nicht mehr)“ – Vergangenheitsgewohnheit.",re:/\bused to\s+(?!be\s)\w+/i,sample:"I used to play football every weekend.",note:"used to + Grundform = früher TUN. Nicht verwechseln mit be used to!"},
+ {cat:"Grammatik",title:"be used to + -ing",de:"„an etwas gewohnt sein“ – am/is/are used to + -ing.",re:/\b(?:am|is|are|was|were)\s+used\s+to\s+\w*ing\b/i,sample:"I am used to getting up early.",note:"Das to ist Präposition → danach -ing (wie: looking forward to seeing you)."},
+ {cat:"Grammatik",title:"suggest",de:"„vorschlagen“ – suggest mit -ing ODER that + Grundform (kein will!).",re:/\bsuggest(?:ed|s)?\s+\w+ing\b|\bsuggest(?:ed|s)?\s+that\s+/i,sample:"The trainer suggested trying a new plan.",note:"suggest + -ing ODER suggest that we try. NIE suggest + will/to."},
+ {cat:"Vokabel",title:"even",de:"„sogar“ – verstärke etwas Überraschendes.",re:/\beven\b/i,sample:"It was raining, but even the kids wanted to go outside.",note:"even = sogar. Nicht wahllos einfügen."},
+ {cat:"Verbindungswort",title:"however",de:"„jedoch“ – verbinde zwei gegensätzliche Sätze.",re:/\bhowever\b/i,sample:"The plan sounded great. However, it was too expensive.",note:"however am Satz-/Teilsatzanfang, danach Komma."},
+ {cat:"Verbindungswort",title:"although",de:"„obwohl“ – although mit vollem Nebensatz.",re:/\balthough\b/i,sample:"Although it was raining, we went for a walk.",note:"although + Satz (Subjekt+Verb). Für Nomen → despite."},
+ {cat:"Verbindungswort",title:"despite",de:"„trotz“ – despite mit Nomen oder -ing (kein voller Satz).",re:/\bdespite\b/i,sample:"Despite the rain, we went for a walk.",note:"despite + Nomen/-ing · although + Satz. Klassische Verwechslung!"},
+ {cat:"Vokabel",title:"therefore",de:"„deshalb“ – ziehe eine Folgerung.",re:/\btherefore\b/i,sample:"The gym was closed; therefore, we trained at home.",note:"therefore = deshalb; formeller als so."},
+ {cat:"Vokabel",title:"to afford",de:"„sich leisten können“ – Satz über Geld (oft can/can't).",re:/\bafford(?:ed|s)?\b/i,sample:"I can't afford a new laptop right now.",note:"afford meist mit can/can't."},
+ {cat:"Fachbegriff",title:"source code",de:"Erkläre in einem Satz, was der Quellcode ist (englischer Begriff!).",re:/\bsource code\b/i,sample:"The company publishes the source code, so everyone can check how it works.",note:"Quellcode = geschriebener Programmtext. NICHT die Sprache, NICHT Nutzerdaten."},
+ {cat:"Vokabel",title:"to look forward to",de:"„sich freuen auf“ – benutze look forward to + -ing.",re:/\blook(?:ing|ed)?\s+forward\s+to\s+\w*ing\b/i,sample:"I look forward to hearing from you.",note:"to ist hier Präposition → -ing. Brief-Klassiker: I look forward to hearing from you."},
+ {cat:"Vokabel",title:"to borrow",de:"„sich (von jemandem) ausleihen“ – baue einen Satz mit borrow.",re:/\bborrow(?:ed|s|ing)?\b/i,sample:"Can I borrow your pen for a second?",note:"borrow = LEIHT dir etwas · lend = DU gibst jemandem etwas."},
+ {cat:"Vokabel",title:"eventually",de:"„schließlich / irgendwann doch noch“.",re:/\beventually\b/i,sample:"After three attempts, I eventually passed the test.",note:"eventually = endlich/schließlich – NICHT 'eventuell' (= possibly)!"},
+ {cat:"Vokabel",title:"actually",de:"„tatsächlich / eigentlich“ – korrigiere etwas.",re:/\bactually\b/i,sample:"Actually, I changed my mind – let's stay home.",note:"actually = tatsächlich. NICHT 'aktuell' (= currently)!"},
+ {cat:"Vokabel",title:"to realize",de:"„merken / begreifen“ – realize (auch realise).",re:/\brealiz(?:e|ed|es|ing)\b|\brealis(?:e|ed|es|ing)\b/i,sample:"I didn't realize how late it was.",note:"realize + Objekt oder that-Satz."},
+ {cat:"Vokabel",title:"to get along with",de:"„gut auskommen mit jemandem“.",re:/\bget(?:ting|s)?\s+along\s+with\b/i,sample:"I get along with my new colleagues really well.",note:"get along with somebody = gute Beziehung."},
+ {cat:"Vokabel",title:"to improve",de:"„verbessern / sich verbessern“.",re:/\bimprov(?:e|es|ed|ing)\b/i,sample:"My English improves a little every day.",note:"improve mit oder ohne Objekt."},
+ {cat:"Vokabel",title:"reliable",de:"„verlässlich / zuverlässig“.",re:/\breliable\b/i,sample:"My old car is old but really reliable.",note:"Gegenteil: unreliable."},
+ {cat:"Vokabel",title:"to complain about",de:"„sich beschweren über“.",re:/\bcomplain(?:ed|s|ing)?\s+about\b/i,sample:"The guests complained about the noisy street.",note:"complain ABOUT (Präposition!)."},
+ {cat:"Grammatik",title:"to be about to",de:"„gerade dabei sein, etwas zu tun“.",re:/\b(?:was|is|are|were|am)\s+about\s+to\s+\w+/i,sample:"I was about to leave when the phone rang.",note:"be about to + Grundform = steht unmittelbar bevor."}
+];
+
+/* ══════════ KARTEN-TYPEN ZUSAMMENBAUEN ══════════ */
+const WKEY="et_my_words";
+function loadW(){ try{return JSON.parse(localStorage.getItem(WKEY))||[];}catch(e){return [];} }
+function saveW(w){ localStorage.setItem(WKEY,JSON.stringify(w)); }
+function wordCard(id,en,deArr,note,cat){
+  return {id:id, cat:cat, type:"word", title:en, deWord:deArr,
+    de:"Wie heißt das auf Englisch?",
+    check:function(txt){ const re=new RegExp("\\b"+en.replace(/^to /,"").replace(/ /g,"\\s+")+"\\b","i"); return re.test(txt); },
+    sample:en, note:"Bedeutung: "+deArr+(note?" · Verwandt/Hinweis: "+note:""), level:cat}; }
+function allCards(){
+  const mine=loadW().map(w=>wordCard("my:"+w.en.toLowerCase(),w.en,w.de,w.note||"","Meine Vokabeln"));
+  const kern=DECK.map(c=>Object.assign({},c,{id:c.title}));
+  const lvl=[]; const cl=getLevel()||"B1";
+  (LEVEL_WORDS[cl]||[]).forEach(w=>lvl.push(wordCard("lv:"+cl+":"+w[0].toLowerCase(),w[0],w[1],w[2],"Level "+cl)));
+  return mine.concat(kern,lvl); }
+
+/* ══════════ SENTENCES / TEXTS / STORIES / VERBEN / TRANSFORM (wie zuvor) ══════════ */
+const SENTENCES=[
+ "I used to drink three cups of coffee every morning.",
+ "She suggested going to the new restaurant on Friday.",
+ "Despite the heavy traffic, we arrived at the end of the party in time.",
+ "He can't afford to buy a new car before the summer holidays.",
+ "Although the gym was crowded, she finished her whole workout.",
+ "I'm not used to getting up early, so I prepared everything beforehand.",
+ "The plan sounded perfect. However, it was too expensive for us.",
+ "Even my grandmother checks the source code of her favourite app.",
+ "I was about to leave the house when my friend called me.",
+ "He eventually realized that borrowing money is easier than paying it back.",
+ "Actually, she has never complained about the noise in this neighbourhood.",
+ "We are looking forward to improving our English with this reliable app."
+];
+const TEXTS=[
+ {title:"The Missing Bus", level:"A2",
+  text:"Last Monday, Lena missed her usual bus because she stayed in bed too long. She decided to walk to work instead. On the way, she found a wallet on the pavement. Inside were fifty pounds and a student card. Lena went to the nearest police station and handed it in. The police officer thanked her and said the owner could pick it up the next day. When Lena finally arrived at her office, she was twenty minutes late – but her boss didn't say anything about it.",
+  questions:[
+   {q:"Why did Lena miss the bus?",opts:["She woke up too late.","The bus came too early.","She walked slowly."],c:0},
+   {q:"What did she find on the pavement?",opts:["Fifty pounds and a student card.","A wallet with her own card.","Fifty pounds and a bus ticket."],c:0},
+   {q:"What did her boss do?",opts:["He said nothing about her lateness.","He sent her home.","He thanked her for the wallet."],c:0}]},
+ {title:"A New Flatmate", level:"B1",
+  text:"Tom had lived alone for three years, so he was not used to sharing his flat. When his new flatmate moved in, Tom suggested setting up a few basic rules. The flatmate agreed, although he looked a little surprised. Despite a few small arguments about washing up in the first week, they soon found a routine. Tom even stopped working at weekends, because he now spent his free time showing his flatmate around the city. In the end, he wondered why he had waited so long.",
+  questions:[
+   {q:"Why did Tom suggest setting up rules?",opts:["He wasn't used to sharing his flat.","The flatmate demanded it.","The landlord required it."],c:0},
+   {q:"What caused the small arguments?",opts:["Washing up.","Noise at night.","Rent payments."],c:0},
+   {q:"How did Tom's weekends change?",opts:["He stopped working at weekends.","He started working more.","He spent them cleaning."],c:0}]},
+ {title:"The Job Interview", level:"B1",
+  text:"Daniel had applied for six jobs before he was invited to an interview at a small marketing agency. Although he was nervous, he had prepared everything beforehand: answers to typical questions, questions of his own, and a second shirt in his bag – just in case. The manager asked him about his weaknesses, and Daniel answered honestly. He said he sometimes started too many projects at once, but he had learned to make lists and finish one task before starting the next. The manager smiled and told him that reliable people who know their own weaknesses are exactly what the team needed. Two days later, Daniel got the call: he got the job.",
+  questions:[
+   {q:"How many jobs had Daniel applied for before this interview?",opts:["Six.","Two.","Three."],c:0},
+   {q:"What weakness did Daniel mention?",opts:["He starts too many projects at once.","He is always late.","He complains about colleagues."],c:0},
+   {q:"Why did the manager like his answer?",opts:["Reliable people who know their weaknesses are useful.","Daniel had a second shirt with him.","Daniel had worked at an agency before."],c:0}]},
+ {title:"A Rainy Day in Brighton", level:"A2",
+  text:"Mia and her brother planned a day at the beach in Brighton, but it started to rain early in the morning. Although they were disappointed, they didn't want to stay at home. First, they visited the small aquarium near the pier. Afterwards, they drank hot chocolate in a café and watched the rain through the window. In the end, the sun came out at four o'clock, and they spent an hour on the beach anyway. Mia said later: 'Sometimes a bad start makes a good day.'",
+  questions:[
+   {q:"What was the original plan?",opts:["A day at the beach.","A visit to a museum.","A walk to the office."],c:0},
+   {q:"What did they do first?",opts:["They visited the aquarium.","They drank hot chocolate.","They went swimming."],c:0},
+   {q:"When did the sun come out?",opts:["At four o'clock.","In the early morning.","They never saw the sun."],c:0}]}
+];
+const STORIES=[
+ {title:"The Lost Camera", level:"B1",
+  text:"On a warm Saturday in May, Jonas took his father's old camera to the river. He wanted to take photos of the ducks for a school project. While he was climbing down the bank, the camera slipped out of his hands and fell into the shallow water. Jonas felt terrible – the camera was not his, and it was worth several hundred pounds.\n\nHe told his friend Emma about it. She suggested asking at the local diving club. Although it sounded like a long shot, they went there the same afternoon. A friendly instructor named Rob listened carefully, smiled, and said: 'Give me one hour.'\n\nRob found the camera within forty minutes. Nothing was broken except a small scratch on the side. Jonas's father laughed when he heard the whole story and said the scratch was a good price for the lesson Jonas had learned.",
+  questions:[
+   {q:"Why did Jonas take the camera to the river?",opts:["For a school project about ducks.","Because his father asked him to.","To test whether it was waterproof."],c:0},
+   {q:"What did Emma suggest?",opts:["Asking at the local diving club.","Buying a new camera immediately.","Telling the police."],c:0},
+   {q:"How did the father react?",opts:["He laughed and said the scratch was a fair price for the lesson.","He was angry for a week.","He sold the camera."],c:0}]},
+ {title:"The Night Shift", level:"A2",
+  text:"Sara works as a nurse, and last month she started working night shifts. At first, she was not used to sleeping during the day, so she was tired all the time. Her neighbour gave her a simple tip: blackout curtains and a cup of tea before bed.\n\nAfter two weeks, Sara got used to her new routine. She even started to enjoy the quiet nights. In the end, she said the best part was coming home in the morning, when the city was waking up and she was going to sleep.",
+  questions:[
+   {q:"What was Sara's problem at first?",opts:["She wasn't used to sleeping during the day.","She didn't like her job.","She had no neighbours."],c:0},
+   {q:"What tip did her neighbour give her?",opts:["Blackout curtains and tea before bed.","A new mattress.","Working fewer nights."],c:0}]},
+ {title:"Two Tickets", level:"A2",
+  text:"Ben wanted to surprise his sister Amy with two tickets for her favourite band. The concert was in three months, but the tickets were selling fast. Although they were quite expensive, Ben decided to buy them. He paid with the money he had saved from his summer job.\n\nOn the day of the concert, Amy cried with happiness. Even their parents came along and stood at the back, quietly singing every song. Eventually, Ben realised that the best part of the evening wasn't the band – it was watching his sister enjoy it.",
+  questions:[
+   {q:"How did Ben pay for the tickets?",opts:["With money from his summer job.","With his parents' credit card.","He won them in a competition."],c:0},
+   {q:"What did Ben realise in the end?",opts:["Watching his sister was the best part.","The band wasn't good.","The tickets were too expensive."],c:0}]}
+];
+const IRREG=[
+ ["go","went","gone","gehen"],["buy","bought","bought","kaufen"],["take","took","taken","nehmen"],
+ ["make","made","made","machen"],["get","got","got","bekommen"],["come","came","come","kommen"],
+ ["give","gave","given","geben"],["find","found","found","finden"],["think","thought","thought","denken"],
+ ["know","knew","known","wissen/kennen"],["see","saw","seen","sehen"],["tell","told","told","erzählen"],
+ ["feel","felt","felt","fühlen"],["leave","left","left","verlassen"],["keep","kept","kept","behalten"],
+ ["meet","met","met","treffen"],["pay","paid","paid","bezahlen"],["say","said","said","sagen"],
+ ["sell","sold","sold","verkaufen"],["send","sent","sent","schicken"],["sit","sat","sat","sitzen"],
+ ["sleep","slept","slept","schlafen"],["speak","spoke","spoken","sprechen"],["stand","stood","stood","stehen"],
+ ["understand","understood","understood","verstehen"],["write","wrote","written","schreiben"],
+ ["begin","began","begun","anfangen"],["break","broke","broken","zerbrechen"],["bring","brought","brought","bringen"],
+ ["build","built","built","bauen"],["choose","chose","chosen","wählen"],["cost","cost","cost","kosten"],
+ ["cut","cut","cut","schneiden"],["do","did","done","tun"],["drink","drank","drunk","trinken"],
+ ["drive","drove","driven","fahren"],["eat","ate","eaten","essen"],["fall","fell","fallen","fallen"],
+ ["fly","flew","flown","fliegen"],["forget","forgot","forgotten","vergessen"],["grow","grew","grown","wachsen"],
+ ["hear","heard","heard","hören"],["hold","held","held","halten"],["hurt","hurt","hurt","verletzen"],
+ ["lead","led","led","führen"],["lose","lost","lost","verlieren"],["mean","meant","meant","bedeuten"],
+ ["put","put","put","stellen"],["read","read","read","lesen"],["ride","rode","ridden","reiten"],
+ ["run","ran","run","rennen"],["sing","sang","sung","singen"],["spend","spent","spent","verbringen"],
+ ["swim","swam","swum","schwimmen"],["teach","taught","taught","lehren"],["throw","threw","thrown","werfen"],
+ ["wake","woke","woken","aufwachen"],["wear","wore","worn","tragen"],["win","won","won","gewinnen"]
+];
+const TRANSFORM=[
+ {lvl:"B1",de:"Übersetze: „Obwohl es regnete, gingen wir spazieren.“ (although)",re:/\balthough\b/i,sample:"Although it was raining, we went for a walk.",note:"although + voller Satz (Subjekt + Verb)."},
+ {lvl:"B1",de:"Übersetze: „Trotz des Regens gingen wir spazieren.“ (despite)",re:/\bdespite\b/i,sample:"Despite the rain, we went for a walk.",note:"despite + Nomen/-ing – NIE ein voller Satz danach."},
+ {lvl:"B1",de:"Forme um: „Der Plan war gut, aber zu teuer.“ (however)",re:/\bhowever\b/i,sample:"The plan was good. However, it was too expensive.",note:"however beginnt den neuen Satz, danach Komma."},
+ {lvl:"B1",de:"Übersetze: „Das Fitnessstudio war geschlossen, deshalb trainierten wir zu Hause.“ (therefore)",re:/\btherefore\b/i,sample:"The gym was closed; therefore, we trained at home.",note:"therefore = deshalb."},
+ {lvl:"B1",de:"Übersetze: „Ich spielte früher jedes Wochenende Fußball.“ (used to)",re:/\bused to\s+\w+/i,sample:"I used to play football every weekend.",note:"used to + Grundform = frühere Gewohnheit."},
+ {lvl:"B1",de:"Übersetze: „Ich bin gewohnt, früh aufzustehen.“ (be used to)",re:/\b(?:am|is|are)\s+used\s+to\s+\w*ing\b/i,sample:"I am used to getting up early.",note:"be used to + -ing (to = Präposition)."},
+ {lvl:"B1",de:"Übersetze: „Ich freue mich darauf, dich wiederzusehen.“ (look forward to)",re:/\blook(?:ing)?\s+forward\s+to\s+\w*ing\b/i,sample:"I look forward to seeing you again.",note:"look forward to + -ing."},
+ {lvl:"B1",de:"Übersetze: „Sie schlug vor, ins Kino zu gehen.“ (suggest)",re:/\bsuggest(?:ed)?\s+(?:going|that\s+we\s+go)\b/i,sample:"She suggested going to the cinema.",note:"suggest + -ing ODER suggest that we go (Wunschform)."},
+ {lvl:"A2",de:"Übersetze: „Ich muss heute arbeiten.“ (must)",re:/\b(?:must|have to|has to)\b/i,sample:"I must work today. / I have to work today.",note:"must = Verpflichtung; 'must to' existiert NICHT."},
+ {lvl:"A2",de:"Übersetze: „Es regnete, deshalb blieben wir zu Hause.“ (so)",re:/\bso\s+(we|I|they|he|she|it)\s+stayed\b/i,sample:"It rained, so we stayed at home.",note:"so = deshalb (mittleres Verbindungswort, kein Komma danach nötig)."},
+ {lvl:"A2",de:"Übersetze: „Sie ist größer als ihr Bruder.“ (Vergleichsform)",re:/\btaller\s+than\b/i,sample:"She is taller than her brother.",note:"kurze Adjektive: -er + than (taller, older, bigger)."},
+ {lvl:"B1",de:"Übersetze: „Ich habe gerade gegessen.“ (present perfect + just)",re:/\b(?:have|has)\s+just\s+\w+(?:ed|en|e)?\b/i,sample:"I have just eaten.",note:"have/has + just + Partizip – gerade eben abgeschlossen."},
+ {lvl:"B2",de:"Übersetze: „Der Brief wurde gestern geschrieben.“ (Passiv)",re:/\bwas\s+written\b/i,sample:"The letter was written yesterday.",note:"Passiv: be (in passender Zeit) + Past Participle."},
+ {lvl:"B2",de:"Übersetze: „Wenn ich Zeit hätte, würde ich reisen.“ (Bedingung Typ 2)",re:/\bif\s+i\s+had\b[\s\S]*\bwould\s+travel\b/i,sample:"If I had time, I would travel.",note:"Typ 2: If + Simple Past … would + Grundform (unreal)."},
+ {lvl:"B2",de:"Übersetze: „Er fragte mich, wo ich wohnte.“ (indirekte Frage)",re:/\basked\s+(?:me|him|her|us)\s+where\s+i\s+lived\b/i,sample:"He asked me where I lived.",note:"Indirekte Frage: KEINE Fragestellung, Zeit zurück (live → lived)."}
+];
+function lvlIdx(l){ return LEVELS.indexOf(l); }
+function currentLvlIdx(){ const l=getLevel(); return l? lvlIdx(l) : lvlIdx("B1"); }
+function allowedTransforms(){ return TRANSFORM.filter(t=>lvlIdx(t.lvl)<=currentLvlIdx()); }
+const TOPICS=[
+ "Beschreibe deinen gestrigen Tag – was war gut, was war nervig?",
+ "Dein perfekter Samstag: Was machst du, mit wem, und warum?",
+ "Erzähle von einer Entscheidung, die du bereut hast – oder nicht.",
+ "Beschreibe eine Person, die du bewunderst, und warum.",
+ "Was würdest du machen, wenn du morgen einen freien Tag hättest?",
+ "Erzähle von einer Gewohnheit, die du früher hattest (used to!).",
+ "Dein Lieblingsort in deiner Stadt – warum gehst du da hin?",
+ "Beschreibe das letzte Mal, dass du etwas zum ersten Mal gemacht hast.",
+ "Welche App könntest du nicht mehr missen – und warum?",
+ "Du gewinnst 1000 € – aber du musst sie in einer Woche ausgeben. Was tust du?"
+];
+
+/* ══════════ SPEICHER ══════════ */
+const KEY="et_progress_v1", CKEY="et_cards_v1", SKEY="et_srs_v1";
+function loadP(){ try{return JSON.parse(localStorage.getItem(KEY))||{days:{}};}catch(e){return {days:{}};} }
+function saveP(p){ localStorage.setItem(KEY,JSON.stringify(p)); }
+function loadC(){ try{return JSON.parse(localStorage.getItem(CKEY))||{};}catch(e){return {};} }
+function saveC(c){ localStorage.setItem(CKEY,JSON.stringify(c)); }
+function loadS(){ try{return JSON.parse(localStorage.getItem(SKEY))||{};}catch(e){return {};} }
+function saveS(s){ localStorage.setItem(SKEY,JSON.stringify(s)); }
+function today(offset){ const d=new Date(); if(offset) d.setDate(d.getDate()+offset);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function record(val,type){ const p=loadP(); const t=today();
+  if(!p.days[t]) p.days[t]={r:0,w:0,m:0};
+  if(val==="ok") p.days[t].r++; else if(val==="again") p.days[t].w++; else p.days[t].m++;
+  if(type){ if(!p.days[t].ty) p.days[t].ty={};
+    if(!p.days[t].ty[type]) p.days[t].ty[type]={r:0,w:0};
+    if(val==="ok") p.days[t].ty[type].r++; else if(val==="again") p.days[t].ty[type].w++; }
+  saveP(p); renderStreak(); }
+function masteryOf(id){ return (loadC()[id]||0)>=3; }
+function bumpCard(id){ const c=loadC(); c[id]=(c[id]||0)+1; saveC(c); }
+function resetCard(id){ const c=loadC(); c[id]=0; saveC(c); }
+function srsOf(id){ const s=loadS(); return s[id]||null; }
+function setSrs(id,prop,val){ const s=loadS(); if(!s[id]) s[id]={int:0,ok:0,due:today()}; s[id][prop]=val; saveS(s); }
+function isDueId(id){ const e=srsOf(id); return !e || e.due<=today(); }
+const STEPS=[1,3,7,14,30];
+function renderStreak(){
+  const p=loadP(); let streak=0; const d=new Date();
+  for(;;){ const k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    const day=p.days[k]; if(day && (day.r+day.w+day.m)>0){ streak++; d.setDate(d.getDate()-1);} else break; }
+  document.getElementById("streak").textContent="🔥 "+streak+" Tag"+(streak===1?"":"e");
+}
+function renderProgress(){
+  const p=loadP(); let r=0,w=0,m=0;
+  Object.values(p.days).forEach(d=>{r+=d.r; w+=d.w; m+=(d.m||0);});
+  const t=r+w+m, pct=t?Math.round(100*r/t):0;
+  function box(n,l){return '<div class="stat-box"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
+  document.getElementById("stat-grid").innerHTML=
+    box(r,"✅ sicher")+box(w,"🔁 nochmal nötig")+box(pct+" %","Trefferquote")+box(Object.keys(p.days).length,"aktive Tage");
+  const td=p.days[today()]||{r:0,w:0,m:0}; const done=td.r+td.w+(td.m||0);
+  document.getElementById("goal-text").textContent=Math.min(done,12)+"/12";
+  document.getElementById("goal-bar").style.width=Math.min(100,Math.round(100*done/12))+"%";
+  const chart=document.getElementById("chart"); chart.innerHTML="";
+  for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i);
+    const k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    const day=p.days[k]||{r:0,w:0,m:0}; const total=day.r+day.w+(day.m||0);
+    const b=document.createElement("div"); b.className="bar"; b.style.height=Math.max(4,Math.min(100,total*12))+"px";
+    b.title=day.r+" ✅ / "+day.w+" 🔁";
+    const s=document.createElement("span"); s.textContent=(d.getMonth()+1)+"."+(d.getDate());
+    b.appendChild(s); chart.appendChild(b); }
+  const cards=allCards();
+  document.getElementById("mastery-count").textContent=cards.filter(c=>masteryOf(c.id)).length;
+  document.getElementById("mastery-total").textContent=cards.length;
+  document.getElementById("due-count").textContent=cards.filter(c=>isDueId(c.id)).length;
+  document.getElementById("pf-words").textContent=loadW().length;
+  renderCoach(); }
+function renderCoach(){
+  const NAMES={voc:"Vokabel-Sätze",listen:"Diktat",read:"Lese-Fragen",story:"Story-Fragen",
+    gap:"Lückentexte",verb:"Unregelmäßige Verben",trans:"Umformen",write:"Schreiben"};
+  const p=loadP(); const tips=[];
+  const days=Object.keys(p.days);
+  if(!days.length){ document.getElementById("coach").innerHTML="👶 Noch keine Daten – mach eine erste Runde, dann analysiere ich hier deine Stärken und Schwächen."; return; }
+  /* 1. Letzte Aktivität */
+  const sorted=days.slice().sort(); const last=sorted[sorted.length-1];
+  const dl=last.split("-").map(Number); const dd=new Date(dl[0],dl[1]-1,dl[2]);
+  const gap=Math.floor((new Date()-dd)/86400000);
+  if(gap>=2) tips.push("⏰ Du hast <b>"+gap+" Tage Pause</b> gehabt. Kurze Session jetzt (Tagesmix ⚡) hält die Serie am Leben – und dein Gehirn liebt verteiltes Lernen.");
+  /* 2. Schwächster Bereich */
+  const agg={}; days.forEach(k=>{ const ty=p.days[k].ty||{}; Object.keys(ty).forEach(t=>{
+    if(!agg[t]) agg[t]={r:0,w:0}; agg[t].r+=ty[t].r; agg[t].w+=ty[t].w; }); });
+  const scored=Object.keys(agg).filter(t=>agg[t].r+agg[t].w>=4)
+    .map(t=>({t:t,pct:Math.round(100*agg[t].r/(agg[t].r+agg[t].w))})).sort((a,b)=>a.pct-b.pct);
+  if(scored.length){ const worst=scored[0];
+    tips.push("🎯 Dein schwächster Bereich: <b>"+(NAMES[worst.t]||worst.t)+"</b> ("+worst.pct+" % sicher). "+
+      ({listen:"Tipp: Hör jeden Satz zweimal – erst global, dann Wort für Wort.",
+        verb:"Tipp: 10 Verben pro Session reichen – Regelmäßigkeit schlägt Masse.",
+        gap:"Tipp: Lies dir nach jeder Antwort die 📌-Regel laut vor.",
+        trans:"Tipp: Schreib die Musterlösung 1× ab – das prägt Strukturen.",
+        voc:"Tipp: Baue lautere Sätze – je persönlicher, desto besser hängt es.",
+        read:"Tipp: Lies die Fragen VOR dem Text – du liest dann gezielter.",
+        story:"Tipp: Nutze 🐢 Langsam beim ersten Hören.",
+        write:"Tipp: Erst 3 Sätze einfach – lieber kurz und korrekt."})[worst.t]||"");
+    const best=scored[scored.length-1];
+    if(best.pct>=80 && best.t!==worst.t) tips.push("🏆 Stärke: <b>"+(NAMES[best.t]||best.t)+"</b> ("+best.pct+" %). Darauf kannst du bauen."); }
+  /* 3. Problemkarten */
+  const s=loadS(); const hard=Object.keys(s).filter(k=>(s[k].w||0)>=2).sort((a,b)=>(s[b].w||0)-(s[a].w||0)).slice(0,3);
+  if(hard.length){ const names=hard.map(id=>{ const c=allCards().find(x=>x.id===id); return c?c.title:id; });
+    tips.push("🔁 Karten, die dich immer wieder abholen: <b>"+names.join(", ")+"</b> – schreib zu jeder EINEN eigenen Satz laut vor dich hin."); }
+  /* 4. Fällig */
+  const due=allCards().filter(c=>isDueId(c.id)).length;
+  if(due>15) tips.push("📦 "+due+" Karten sind fällig – lieber 2 kurze Runden heute, statt einer langen.");
+  document.getElementById("coach").innerHTML = tips.length? tips.map(t=>"· "+t).join("<br>")
+    : "✅ Alles im grünen Bereich – weiter so! Keine Auffälligkeiten in deinen Daten."; }
+function exportProgress(){ document.getElementById("io-box").value=JSON.stringify(loadP());
+  document.getElementById("io-box").select(); }
+function importProgress(){ try{ const v=JSON.parse(document.getElementById("io-box").value.trim());
+  if(!v||typeof v!=="object"||!v.days) throw 0; saveP(v); renderProgress(); renderStreak();
+  document.getElementById("io-box").value=""; alert("✅ Fortschritt importiert!"); }
+  catch(e){ alert("⚠️ Das war kein gültiger Export-Text."); } }
+
+/* ══════════ NAVIGATION ══════════ */
+function showView(id){
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.v===id));
+  if(id==="view-progress"){ renderProgress(); renderLookup(); }
+  if(id==="view-read" && !readState.started) { readMode(readState.mode||"ex"); }
+  if(id==="view-vocab") updateDueInfo();
+}
+function updateDueInfo(){ const due=allCards().filter(c=>isDueId(c.id)).length;
+  document.getElementById("voc-due-info").textContent = due? "⏰ Heute fällig: "+due+" Karten" : "✨ Nichts fällig – freies Training!"; }
+
+/* ══════════ EINSTUFUNGSTEST ══════════ */
+let test=null;
+function startTest(){ test={li:0,qi:0,ok:0};
+  document.getElementById("test-area").classList.remove("hidden"); testShow(); }
+function testShow(){
+  const q=TEST[test.li][test.qi];
+  document.getElementById("test-area").innerHTML=
+   '<span class="badge">Level-Block '+(test.li+1)+'/6 · '+LEVELS[test.li]+'</span>'+
+   '<h2>Frage '+(test.qi+1)+'/3</h2><p class="sub" style="margin-bottom:6px;">'+q.q+'</p>'+
+   '<div class="progress-dots">'+LEVELS.map((l,i)=>'<div class="pdot'+(i<test.li?" done":"")+'"></div>').join("")+'</div>'+
+   q.opts.map((o,i)=>'<button class="q-opt" onclick="testAnswer(this,'+i+')">'+o+'</button>').join("")+
+   '<div id="test-result"></div><div class="btn-row hidden" id="test-next"><button class="btn btn-primary" onclick="testNext()">Weiter ▶</button></div>'; }
+function testAnswer(btn,i){ const q=TEST[test.li][test.qi];
+  const opts=btn.parentElement.querySelectorAll(".q-opt");
+  opts.forEach((b,j)=>{ b.disabled=true; if(j===q.c) b.classList.add("correct"); });
+  const ok=(i===q.c); if(ok) test.ok++;
+  document.getElementById("test-result").innerHTML='<div class="feedback '+(ok?"ok":"miss")+'">'+
+    (ok?"✅ Richtig!":"❌ Leider nicht – die grüne Antwort ist richtig.")+'</div>';
+  document.getElementById("test-next").classList.remove("hidden"); }
+function testNext(){ test.qi++;
+  if(test.qi<3){ testShow(); return; }
+  if(test.ok>=2 && test.li<5){ test.li++; test.qi=0; test.ok=0; testShow(); return; }
+  const reached=test.ok>=2? test.li+1 : test.li;
+  const lvl=reached<=0? "A1" : LEVELS[Math.min(reached,5)];
+  setLevel(lvl); renderLevel(); renderProgress();
+  document.getElementById("test-area").innerHTML=
+   '<div class="feedback ok">🎯 <b>Dein Einstufungsniveau: '+lvl+'</b><br><span class="note">Der Test ist eine Schätzung (18 Fragen) – du kannst ihn jederzeit wiederholen oder das Level manuell ändern. Deine Level-Vokabeln richten sich jetzt danach.</span></div>'+
+   '<div class="btn-row"><button class="btn btn-ghost btn-small" onclick="startTest()">🔁 Test wiederholen</button></div>'; }
+
+/* ══════════ VOKABELN (mit Kalender) ══════════ */
+let vq=[],vi=0,vMissed=[],vCard=null;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function vocStart(onlyMastered){
+  const pool=allCards();
+  let queue;
+  if(onlyMastered){ queue=shuffle(pool.filter(c=>masteryOf(c.id))); }
+  else {
+    const due=shuffle(pool.filter(c=>isDueId(c.id)));
+    const later=shuffle(pool.filter(c=>!isDueId(c.id)&&!masteryOf(c.id)));
+    const mastered=shuffle(pool.filter(c=>!isDueId(c.id)&&masteryOf(c.id)));
+    queue=due.slice(0,12);
+    if(queue.length<12) queue=queue.concat(later.slice(0,12-queue.length));
+    if(queue.length<12) queue=queue.concat(mastered.slice(0,12-queue.length));
+  }
+  if(!queue.length){ alert("💪 Alles sitzt – nichts zu wiederholen!"); return; }
+  vq=queue; vi=0; vMissed=[];
+  document.getElementById("voc-start").classList.add("hidden");
+  document.getElementById("voc-card").classList.remove("hidden"); vocShow(); }
+function vocShow(){ const c=vq[vi]; vCard=c; const e=srsOf(c.id);
+  document.getElementById("voc-badge").textContent=c.cat+" · Karte "+(vi+1)+"/"+vq.length+
+    (masteryOf(c.id)?" · 💪 sitzt":"")+(e&&e.due<=today()?" · ⏰ fällig":"");
+  document.getElementById("voc-title").textContent = c.type==="word"? c.deWord : c.title;
+  document.getElementById("voc-prompt").textContent = c.type==="word"
+    ? "Wie heißt das auf Englisch? Tippe das Wort (Schreibweise zählt!) – kleine Fehler verzeihen wir."
+    : c.de;
+  const ta=document.getElementById("voc-answer");
+  ta.value=""; ta.placeholder=c.type==="word"?"Deine Übersetzung (Englisch)…":"Dein englischer Beispielsatz…";
+  document.getElementById("voc-result").innerHTML="";
+  document.getElementById("voc-verdict").classList.add("hidden");
+  document.getElementById("voc-check").classList.remove("hidden");
+  ta.focus(); }
+function vocCheck(){ const txt=document.getElementById("voc-answer").value.trim();
+  if(!txt){ document.getElementById("voc-result").innerHTML='<div class="feedback miss">✍️ Schreib erst etwas!</div>'; return; }
+  const hit=vCard.type==="word"? vCard.check(txt) : vCard.re.test(txt);
+  const sampleLine = vCard.type==="word"
+    ? '💡 Lösung: <b>„'+vCard.title+'“</b>'
+    : '💡 Musterlösung: „'+vCard.sample+'“';
+  document.getElementById("voc-result").innerHTML=
+   '<div class="feedback '+(hit?"ok":"miss")+'">'+(hit?"✅ Richtig – gut gemacht!":
+    (vCard.type==="word"?"⚠️ Nicht ganz – die richtige Schreibweise steht unten.":"⚠️ Dein Zielwort <b>"+vCard.title+"</b> wurde nicht gefunden."))+
+   '<div class="sample">'+sampleLine+'</div><div class="note">📌 '+vCard.note+'</div></div>';
+  document.getElementById("voc-verdict").classList.remove("hidden");
+  document.getElementById("voc-check").classList.add("hidden"); }
+function vocVerdict(v){
+  if(v==="ok"){ record("ok","voc"); bumpCard(vCard.id);
+    const e=srsOf(vCard.id)||{int:0,ok:0,due:today()};
+    const step=STEPS[Math.min(e.int,STEPS.length-1)];
+    setSrs(vCard.id,"ok",(e.ok||0)+1);
+    setSrs(vCard.id,"int",Math.min(e.int+1,STEPS.length-1));
+    setSrs(vCard.id,"due",today(step)); }
+  else if(v==="mid"){ record("mid","voc"); vMissed.push(vCard); setSrs(vCard.id,"due",today()); }
+  else { record("again","voc"); resetCard(vCard.id); vMissed.push(vCard);
+    const e2=srsOf(vCard.id)||{w:0}; setSrs(vCard.id,"w",(e2.w||0)+1);
+    setSrs(vCard.id,"int",0); setSrs(vCard.id,"due",today()); }
+  vocNext(); }
+function vocNext(){ vi++;
+  if(vi<vq.length){ vocShow(); return; }
+  if(vMissed.length){ vq=shuffle([...vMissed]); vi=0; vMissed=[];
+    document.getElementById("voc-badge").textContent="Wiederholungsrunde";
+    document.getElementById("voc-result").innerHTML='<div class="feedback mid">🔁 Die unsicheren Karten kommen nochmal – jetzt ohne Druck.</div>'; return; }
+  document.getElementById("voc-card").classList.add("hidden");
+  document.getElementById("voc-start").classList.remove("hidden"); updateDueInfo(); }
+
+/* ══════════ HÖREN ══════════ */
+let liIdx=0, listenTarget=SENTENCES[0], listenIsGen=false;
+function setVoicePref(v){ localStorage.setItem("et_voice",v); }
+function getVoicePref(){ return localStorage.getItem("et_voice")||"auto"; }
+document.getElementById("voice-pref").value=getVoicePref();
+function voiceScore(v){ const n=(v.name||"").toLowerCase();
+  let s=0;
+  if(/natural|online/.test(n)) s+=100;
+  if(/aria|jenny|guy|emma|ava|andrew|brian|serena|sonia|libby/.test(n)) s+=60;
+  if(/google (us|uk) english/.test(n)) s+=50;
+  if(/microsoft/.test(n)) s+=20;
+  if(/compact|espeak|basic/.test(n)) s-=40;
+  const pref=getVoicePref();
+  if(pref==="auto"){ if(/en-(us)/.test(v.lang)) s+=8; if(/en-/.test(v.lang)) s+=5; }
+  else if(v.lang.replace("_","-")===pref) s+=80;
+  else if(!/^en/i.test(v.lang)) s-=100;
+  return s; }
+function pickVoice(){ const vs=speechSynthesis.getVoices(); if(!vs.length) return null;
+  return vs.map(v=>({v,s:voiceScore(v)})).sort((a,b)=>b.s-a.s)[0].v; }
+function speak(text,rate){ speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text); const voice=pickVoice();
+  if(voice) u.voice=voice; u.rate=rate||0.98; u.pitch=1.0;
+  u.lang=voice?voice.lang:getVoicePref(); speechSynthesis.speak(u); }
+function playSentence(rate){ speak(listenTarget,rate); }
+if("speechSynthesis" in window) speechSynthesis.onvoiceschanged=()=>{};
+const GSUBJ=["I","We","My parents","My friends","The children","You","My brother and I","The students"];
+const GADV=["usually","often","never","sometimes","rarely"];
+const GPHR=["drink coffee in the morning","watch TV in the evening","go to the gym after work",
+ "walk to the station every day","cook dinner on Sundays","listen to music on the bus",
+ "play football at the weekend","read a book before bed","call their grandmother on Fridays",
+ "visit the old castle in summer"];
+const GPAST={drink:"drank",watch:"watched",go:"went",walk:"walked",cook:"cooked",listen:"listened",
+ play:"played",read:"read",call:"called",visit:"visited"};
+const GTIME_Y=["yesterday","last weekend","on Friday","two days ago","last summer"];
+function genDictation(){
+  const subj=GSUBJ[Math.floor(Math.random()*GSUBJ.length)];
+  if(Math.random()<0.5){
+    const adv=Math.random()<0.6? GADV[Math.floor(Math.random()*GADV.length)]+" ":"";
+    listenTarget=subj+" "+adv+GPHR[Math.floor(Math.random()*GPHR.length)]+".";
+  } else {
+    const phr=GPHR[Math.floor(Math.random()*GPHR.length)];
+    const base=phr.split(" ")[0]; const rest=phr.split(" ").slice(1).join(" ");
+    listenTarget=(subj==="I"?"Yesterday, I ":"Yesterday, "+subj+" ")+(GPAST[base]||base)+" "+rest+" "+GTIME_Y[Math.floor(Math.random()*GTIME_Y.length)]+".";
+  }
+  listenIsGen=true;
+  document.getElementById("listen-badge").textContent="Hörverständnis · 🎲 Zufallssatz";
+  document.getElementById("listen-answer").value=""; document.getElementById("listen-result").innerHTML="";
+  document.getElementById("listen-verdict").classList.add("hidden");
+  document.getElementById("listen-check").classList.remove("hidden");
+  playSentence(); }
+function norm(t){ return t.toLowerCase().replace(/[^a-z0-9'\s]/g," ").replace(/\s+/g," ").trim().split(" ").filter(Boolean); }
+function listenCheck(){ const target=listenTarget;
+  const user=document.getElementById("listen-answer").value.trim();
+  if(!user){ document.getElementById("listen-result").innerHTML='<div class="feedback miss">✍️ Hör erst zu und schreib dann!</div>'; return; }
+  const tw=norm(target), uw=norm(user); const pool={}; uw.forEach(w=>pool[w]=(pool[w]||0)+1);
+  let hits=0;
+  const marked=tw.map(w=>{ if(pool[w]>0){ pool[w]--; hits++; return '<span class="hit">'+w+'</span>';} return '<span class="missw">'+w+'</span>'; }).join(" ");
+  const pct=Math.round(100*hits/tw.length);
+  document.getElementById("listen-result").innerHTML=
+   '<div class="feedback '+(pct>=80?"ok":pct>=50?"mid":"miss")+'"><b>'+pct+' % der Wörter getroffen.</b><br>'+marked+
+   '<div class="sample">🎯 Original: „'+target+'“</div></div>';
+  document.getElementById("listen-verdict").classList.remove("hidden");
+  document.getElementById("listen-check").classList.add("hidden"); }
+function listenVerdict(v){ record(v,"listen");
+  if(!listenIsGen){ liIdx=(liIdx+1)%SENTENCES.length; listenTarget=SENTENCES[liIdx];
+    document.getElementById("listen-badge").textContent="Hörverständnis · Satz "+(liIdx+1)+"/"+SENTENCES.length; }
+  document.getElementById("listen-answer").value=""; document.getElementById("listen-result").innerHTML="";
+  document.getElementById("listen-verdict").classList.add("hidden");
+  document.getElementById("listen-check").classList.remove("hidden"); }
+
+/* ══════════ LESEN + STORIES ══════════ */
+const readState={started:false,mode:"ex",ti:0,qi:0,si:0};
+function readMode(m){ readState.mode=m;
+  document.getElementById("seg-ex").classList.toggle("active",m==="ex");
+  document.getElementById("seg-st").classList.toggle("active",m==="st");
+  document.getElementById("read-card").classList.toggle("hidden",m!=="ex");
+  document.getElementById("story-card").classList.toggle("hidden",m!=="st");
+  if(m==="ex"&&!readState.started){ readState.started=true; readState.ti=0; readState.qi=0; readShow(); }
+  if(m==="st"){ storyShow(); } }
+function readShow(){ const t=TEXTS[readState.ti]; const q=t.questions[readState.qi];
+  document.getElementById("read-card").innerHTML=
+   '<span class="badge">Lesen · '+t.level+' · Text '+(readState.ti+1)+'/'+TEXTS.length+'</span>'+
+   '<h1>'+t.title+'</h1><p class="sub" style="white-space:pre-line;">'+t.text+'</p>'+
+   '<h2>Frage '+(readState.qi+1)+'/'+t.questions.length+'</h2><p class="sub" style="margin-bottom:6px;">'+q.q+'</p>'+
+   q.opts.map((o,i)=>'<button class="q-opt" onclick="readAnswer(this,'+i+')">'+o+'</button>').join("")+
+   '<div id="read-result"></div>'+
+   '<div class="btn-row hidden" id="read-next"><button class="btn btn-primary" onclick="readNext()">Weiter ▶</button></div>'; }
+function readAnswer(btn,i){ const t=TEXTS[readState.ti], q=t.questions[readState.qi];
+  const opts=document.querySelectorAll("#read-card .q-opt");
+  opts.forEach((b,j)=>{ b.disabled=true; if(j===q.c) b.classList.add("correct"); });
+  const ok=(i===q.c); if(!ok) btn.classList.add("wrong");
+  record(ok?"ok":"again","read");
+  document.getElementById("read-result").innerHTML='<div class="feedback '+(ok?"ok":"miss")+'">'+
+    (ok?"✅ Richtig!":"❌ Nicht ganz – die grüne Antwort ist richtig.")+'</div>';
+  document.getElementById("read-next").classList.remove("hidden"); }
+function readNext(){ const t=TEXTS[readState.ti]; readState.qi++;
+  if(readState.qi<t.questions.length){ readShow(); return; }
+  readState.ti++; readState.qi=0;
+  if(readState.ti<TEXTS.length){ readShow(); }
+  else { readState.started=false;
+    document.getElementById("read-card").innerHTML='<span class="badge">Lesen</span><h1>Alle Texte geschafft! 🎉</h1>'+
+      '<p class="sub">Probier jetzt die <b>🎙️ Geschichten mit Vorlesen</b>.</p>'+
+      '<div class="btn-row"><button class="btn btn-primary" onclick="readStart()">🔄 Von vorn</button></div>'; } }
+function readStart(){ readState.started=true; readState.ti=0; readState.qi=0; readShow(); }
+function storyShow(){ speechSynthesis.cancel();
+  const s=STORIES[readState.si];
+  document.getElementById("story-card").innerHTML=
+   '<span class="badge">Story '+(readState.si+1)+'/'+STORIES.length+' · '+s.level+'</span>'+
+   '<h1>'+s.title+'</h1><p class="story-text">'+s.text+'</p>'+
+   '<div class="btn-row" style="margin-top:14px;">'+
+     '<button class="btn btn-primary btn-small" onclick="speak(STORIES['+readState.si+'].text)">▶️ Vorlesen</button>'+
+     '<button class="btn btn-ghost btn-small" onclick="speak(STORIES['+readState.si+'].text,0.7)">🐢 Langsam</button>'+
+     '<button class="btn btn-ghost btn-small" onclick="speechSynthesis.cancel()">⏹️ Stop</button>'+
+   '</div>'+
+   '<div style="margin-top:18px;">'+
+     s.questions.map((q,i)=>'<p class="sub" style="margin:10px 0 4px;"><b>'+(i+1)+'. '+q.q+'</b></p>'+
+       q.opts.map((o,j)=>'<button class="q-opt" onclick="storyAnswer(this,'+i+','+j+')">'+o+'</button>').join("")).join("")+
+   '</div><div id="story-result"></div>'+
+   '<div class="btn-row"><button class="btn btn-primary" onclick="nextStory()">'+
+     (readState.si<STORIES.length-1?"Nächste Story ▶":"Zurück zum Anfang 🔄")+'</button></div>'; }
+function storyAnswer(btn,qi,oi){ const s=STORIES[readState.si]; const q=s.questions[qi];
+  const opts=btn.parentElement.querySelectorAll(".q-opt");
+  opts.forEach((b,j)=>{ b.disabled=true; if(j===q.c) b.classList.add("correct"); });
+  const ok=(oi===q.c); if(!ok) btn.classList.add("wrong");
+  record(ok?"ok":"again","story"); }
+function nextStory(){ speechSynthesis.cancel();
+  readState.si=(readState.si+1)%STORIES.length; storyShow(); }
+
+/* ══════════ GRAMMATIK-GENERATOREN ══════════ */
+let gMode=null, gv=null, gvIdx=0, gGap=null, gGapIdx=0, gTr=null, gTrIdx=0;
+function gramCard(html){ document.getElementById("gram-menu").classList.add("hidden");
+  const c=document.getElementById("gram-card"); c.classList.remove("hidden"); c.innerHTML=html; }
+function gramMenu(){ gMode=null; speechSynthesis.cancel();
+  document.getElementById("gram-card").classList.add("hidden");
+  document.getElementById("gram-menu").classList.remove("hidden"); }
+function gramVerbs(){ gMode="verb"; gv=shuffle([...IRREG.keys()]); gvIdx=0; verbShow(); }
+function verbShow(){ const v=IRREG[gv[gvIdx]];
+  gramCard('<span class="badge">Unregelmäßige Verben · '+(gvIdx+1)+'/'+gv.length+'</span>'+
+   '<h1>'+v[0]+' <small style="color:var(--muted); font-size:.9rem;">('+v[3]+')</small></h1>'+
+   '<p class="sub">Schreibe Simple Past und Past Participle – getrennt mit „ / “. Format: <b>went / gone</b></p>'+
+   '<textarea id="verb-answer" placeholder="Simple Past / Participle" spellcheck="false"></textarea>'+
+   '<div class="btn-row"><button class="btn btn-primary" id="verb-check" onclick="verbCheck()">🔎 Prüfen</button></div>'+
+   '<div id="verb-result"></div>'+
+   '<div class="verdict-row hidden" id="gram-verdict">'+
+     '<button class="btn btn-good" onclick="gramVerdict(\'ok\')">✅ Sicher <kbd>1</kbd></button>'+
+     '<button class="btn btn-mid" onclick="gramVerdict(\'mid\')">😐 Unsicher <kbd>2</kbd></button>'+
+     '<button class="btn btn-bad" onclick="gramVerdict(\'again\')">🔁 Nochmal <kbd>3</kbd></button>'+
+   '</div><div class="btn-row hidden" id="gram-next"><button class="btn btn-primary" onclick="gramNext()">Weiter ▶</button></div>');
+  document.getElementById("verb-answer").focus(); }
+function verbCheck(){ const v=IRREG[gv[gvIdx]];
+  const txt=document.getElementById("verb-answer").value.trim().toLowerCase();
+  if(!txt){ document.getElementById("verb-result").innerHTML='<div class="feedback miss">✍️ Erst raten, dann prüfen!</div>'; return; }
+  const hasPast=new RegExp("\\b"+v[1]+"\\b").test(txt);
+  const needPP=v[1]!==v[2];
+  const hasPP=needPP? new RegExp("\\b"+v[2]+"\\b").test(txt) : true;
+  const ok=hasPast&&hasPP;
+  document.getElementById("verb-result").innerHTML='<div class="feedback '+(ok?"ok":"miss")+'">'+
+    (ok?"✅ Beide Formen richtig!":"⚠️ Prüfe deine Formen.")+
+    '<div class="sample">'+v[0]+" → "+v[1]+" / "+v[2]+'</div>'+
+    '<div class="note">📌 Beispielsatz: „Last week I '+v[1]+' it.“</div></div>';
+  document.getElementById("gram-verdict").classList.remove("hidden");
+  document.getElementById("verb-check").classList.add("hidden"); }
+const CN=["apples","books","friends","ideas","chairs","photos","questions"];
+const UN=["water","money","time","information","advice","music","homework"];
+const EDING=[["bore","bored","boring"],["interest","interested","interesting"],["tire","tired","tiring"],
+ ["excite","excited","exciting"],["annoy","annoyed","annoying"],["surprise","surprised","surprising"]];
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+/* Lückentext-Muster mit Level – der Pool wächst mit deinem Niveau */
+const GAPS=[
+ {lvl:"A1",gen:()=>{ const n=pick(["elephant","apple","umbrella","egg","orange","house","car"]);
+   const an=/^[aeiou]/.test(n); return {s:"I saw ___ "+n+".",opts:["a","an"],c:an?1:0,note:"a + Konsonantenlaut, an + Vokallaut (Klang, nicht Buchstabe!)."}; }},
+ {lvl:"A1",gen:()=>{ const s=pick([["They","are"],["She","is"],["He","is"],["We","are"],["I","am"]]);
+   return {s:s[0]+" ___ at home.",opts:["is","are","am"],c:["is","are","am"].indexOf(s[1]),note:"am→I · is→he/she/it · are→you/we/they."}; }},
+ {lvl:"A1",gen:()=>{ const s=pick([["We","were"],["She","was"],["They","were"],["He","was"],["You","were"]]);
+   return {s:s[0]+" ___ at the party yesterday.",opts:["was","were"],c:s[1]==="was"?0:1,note:"was→I/he/she/it · were→you/we/they (Vergangenheit von be)."}; }},
+ {lvl:"A1",gen:()=>{ const v=pick([["drinks","drink"],["watches","watch"],["plays","play"],["goes","go"],["studies","study"]]);
+   return {s:"She ___ every morning.",opts:[v[0],v[1]],c:0,note:"he/she/it → Verb + -s (third person -s)."}; }},
+ {lvl:"A2",gen:()=>{ const w=pick(["swim","drive","cook","dance","speak"]);
+   return {s:"I ___ "+w+" when I was a child.",opts:["could","can","will can"],c:0,note:"could = konnte (Vergangenheit von can)."}; }},
+ {lvl:"A2",gen:()=>{ const d=pick(["visit my grandma","start a new job","buy a new bike","watch a film"]);
+   return {s:"Tomorrow I am ___ "+d+".",opts:["going to","go to","going"],c:0,note:"Pläne: am/is/are going to + Grundform."}; }},
+ {lvl:"A2",gen:()=>{ const a=pick([["tall","taller"],["old","older"],["fast","faster"],["cheap","cheaper"],["big","bigger"]]);
+   return {s:"My brother is ___ than me.",opts:[a[1],a[0]],c:0,note:"kurze Adjektive: -er + than (big → bigger!)."}; }},
+ {lvl:"A2",gen:()=>{ const p=pick([["___ Monday","on"],["___ July","in"],["___ seven o'clock","at"],["___ the weekend","at"],["___ 2020","in"]]);
+   return {s:"We met "+p[0]+".",opts:["in","on","at"],c:["in","on","at"].indexOf(p[1]),note:"in + Monat/Jahr · on + Tag/Wochentag · at + Uhrzeit/weekend (UK)."}; }},
+ {lvl:"B1",gen:()=>{ const pt=["2019","last Monday","six o'clock","last winter"][Math.floor(Math.random()*4)];
+   const du=["three years","a long time","two hours","ages"][Math.floor(Math.random()*4)];
+   if(Math.random()<0.5) return {s:"I have lived here ___ "+pt+".",opts:["since","for"],c:0,note:"since + Zeitpunkt (seit 2019) · for + Zeitspanne."};
+   return {s:"I have lived here ___ "+du+".",opts:["since","for"],c:1,note:"since + Zeitpunkt · for + Zeitspanne."}; }},
+ {lvl:"B1",gen:()=>{ if(Math.random()<0.5){ const n=pick(CN);
+      return {s:"How ___ "+n+" do you need?",opts:["much","many"],c:1,note:n+" ist zählbar → many."}; }
+    const n=pick(UN);
+    return {s:"How ___ "+n+" do you need?",opts:["much","many"],c:0,note:n+" ist unzählbar → much."}; }},
+ {lvl:"B1",gen:()=>{ const p=pick(EDING);
+    if(Math.random()<0.5) return {s:"The film was really ___. ("+p[0]+")",opts:[p[1],p[2]],c:1,
+      note:"Eine Sache (the film) → -ing-Form (beschreibt die Sache selbst)."};
+    return {s:"I was so ___ during the film. ("+p[0]+")",opts:[p[1],p[2]],c:0,
+      note:"Eine Person (I) → -ed-Form (beschreibt das Gefühl)."}; }},
+ {lvl:"B1",gen:()=>{ if(Math.random()<0.5) return {s:"Would you like ___ tea?",opts:["some","any"],c:0,note:"Bei höflichen Angeboten/Fragen → some."};
+    return {s:"I don't have ___ money left.",opts:["some","any"],c:1,note:"In verneinten Sätzen → any."}; }},
+ {lvl:"B1",gen:()=>{ return {s:"Have you ___ been to London?",opts:["ever","yet","already"],c:0,note:"ever = jemals (in Fragen über Erfahrung) · yet = in Verneinung/Fragen zu Erwartetem."}; }},
+ {lvl:"B1",gen:()=>{ return {s:"You ___ wear a seatbelt. (Verpflichtung)",opts:["must","must to","musting"],c:0,note:"must + Grundform; 'must to' existiert nicht. Alternativ: have to."}; }},
+ {lvl:"B1",gen:()=>{ return {s:"This coffee is ___ hot to drink.",opts:["too","enough","very"],c:0,note:"too + Adjektiv + to = zu …, um … zu · enough steht NACH dem Adjektiv."}; }},
+ {lvl:"B2",gen:()=>{ const y=pick(["1990","1895","2005","last century"]);
+   return {s:"The house ___ in "+y+".",opts:["was built","was build","has built"],c:0,note:"Passiv: be + Past Participle (was built). "}}},
+ {lvl:"B2",gen:()=>{ return {s:"She is ___ tall as her brother.",opts:["as","so","like"],c:0,note:"Vergleich gleicher Stufe: as … as."}; }},
+ {lvl:"B2",gen:()=>{ return {s:"I haven't finished ___.",opts:["yet","already","still"],c:0,note:"yet = noch nicht (Verneinung) · already = schon (Aussage)."}; }},
+ {lvl:"C1",gen:()=>{ return {s:"I wish I ___ more time.",opts:["had","have","would have"],c:0,note:"I wish + Simple Past = Wunsch zur Gegenwart (unreal)."}; }},
+ {lvl:"C1",gen:()=>{ return {s:"If I had known, I ___ told you.",opts:["would have","would","will have"],c:0,note:"Typ 3: If + had + Partizip … would have + Partizip (Vergangenheit unreal)."}; }}
+];
+function allowedGaps(){ return GAPS.filter(g=>lvlIdx(g.lvl)<=currentLvlIdx()); }
+function makeGap(){ return pick(allowedGaps()).gen(); }
+function gramGap(){ gMode="gap"; gGap=[]; for(let i=0;i<8;i++) gGap.push(makeGap()); gGapIdx=0; gapShow(); }
+function gapShow(){ const g=gGap[gGapIdx];
+  gramCard('<span class="badge">Lückentext · Aufgabe '+(gGapIdx+1)+'/'+gGap.length+'</span>'+
+   '<h1>Welches Wort passt?</h1>'+
+   '<p class="gap-sentence">'+g.s.replace("___","<b>___</b>")+'</p>'+
+   g.opts.map((o,i)=>'<button class="q-opt" onclick="gapAnswer(this,'+i+')">'+o+'</button>').join("")+
+   '<div id="gap-result"></div>'+
+   '<div class="btn-row hidden" id="gap-next"><button class="btn btn-primary" onclick="gapNext()">Weiter ▶</button></div>'); }
+function gapAnswer(btn,i){ const g=gGap[gGapIdx];
+  const opts=btn.parentElement.querySelectorAll(".q-opt");
+  opts.forEach((b,j)=>{ b.disabled=true; if(j===g.c) b.classList.add("correct"); });
+  const ok=(i===g.c); if(!ok) btn.classList.add("wrong");
+  record(ok?"ok":"again","gap");
+  document.getElementById("gap-result").innerHTML='<div class="feedback '+(ok?"ok":"miss")+'">'+
+    (ok?"✅ Richtig!":"❌ Nicht ganz.")+' <div class="note">📌 '+g.note+'</div></div>';
+  document.getElementById("gap-next").classList.remove("hidden"); }
+function gapNext(){ gGapIdx++;
+  if(gGapIdx<gGap.length){ gapShow(); } else gramMenu(); }
+function gramTransform(){ gMode="trans"; gTr=shuffle([...allowedTransforms().keys()]); gTrIdx=0; transShow(); }
+function transShow(){ const t=allowedTransforms()[gTr[gTrIdx]];
+  gramCard('<span class="badge">Umformen · Aufgabe '+(gTrIdx+1)+'/'+gTr.length+'</span>'+
+   '<h1>Satz umformen</h1><p class="sub">'+t.de+'</p>'+
+   '<textarea id="trans-answer" placeholder="Dein englischer Satz…" spellcheck="false"></textarea>'+
+   '<div class="btn-row"><button class="btn btn-primary" id="trans-check" onclick="transCheck()">🔎 Prüfen</button></div>'+
+   '<div id="trans-result"></div>'+
+   '<div class="verdict-row hidden" id="gram-verdict2">'+
+     '<button class="btn btn-good" onclick="gramVerdict2(\'ok\')">✅ Sicher <kbd>1</kbd></button>'+
+     '<button class="btn btn-mid" onclick="gramVerdict2(\'mid\')">😐 Unsicher <kbd>2</kbd></button>'+
+     '<button class="btn btn-bad" onclick="gramVerdict2(\'again\')">🔁 Nochmal <kbd>3</kbd></button>'+
+   '</div><div class="btn-row hidden" id="trans-next"><button class="btn btn-primary" onclick="transNext()">Weiter ▶</button></div>');
+  document.getElementById("trans-answer").focus(); }
+function transCheck(){ const t=allowedTransforms()[gTr[gTrIdx]];
+  const txt=document.getElementById("trans-answer").value.trim();
+  if(!txt){ document.getElementById("trans-result").innerHTML='<div class="feedback miss">✍️ Erst einen Satz schreiben!</div>'; return; }
+  const hit=t.re.test(txt);
+  document.getElementById("trans-result").innerHTML='<div class="feedback '+(hit?"ok":"miss")+'">'+
+    (hit?"✅ Die Zielstruktur ist drin!":"⚠️ Die Zielstruktur fehlt.")+
+    '<div class="sample">💡 Musterlösung: „'+t.sample+'“</div><div class="note">📌 '+t.note+'</div></div>';
+  document.getElementById("gram-verdict2").classList.remove("hidden");
+  document.getElementById("trans-check").classList.add("hidden"); }
+function gramVerdict(v){ record(v,"verb"); gramNext(); }
+function gramVerdict2(v){ record(v,"trans"); transNext(); }
+function gramNext(){ gvIdx++;
+  if(gvIdx<gv.length){ verbShow(); } else gramMenu(); }
+function transNext(){ gTrIdx++;
+  if(gTrIdx<gTr.length){ transShow(); } else gramMenu(); }
+
+/* ══════════ SCHREIBEN ══════════ */
+function newPrompt(){
+  const topic=TOPICS[Math.floor(Math.random()*TOPICS.length)];
+  const targets=shuffle([...DECK]).slice(0,2);
+  document.getElementById("write-topic").textContent=topic;
+  document.getElementById("write-prompt").textContent="Schreib 2–4 Sätze. Versuche, diese beiden Ausdrücke einzubauen:";
+  document.getElementById("write-targets").innerHTML=targets.map(c=>
+    '<span class="chip">'+c.title+'</span>').join("")+
+    '<div class="hint" style="text-align:left; margin-top:8px;">'+targets.map(c=>"📌 <b>"+c.title+"</b>: "+c.note).join("<br>")+'</div>';
+  document.getElementById("write-answer").value="";
+  document.getElementById("write-result").innerHTML="";
+  document.getElementById("write-verdict").classList.add("hidden");
+  document.getElementById("write-done").classList.remove("hidden"); }
+function writeDone(){
+  const txt=document.getElementById("write-answer").value.trim();
+  if(!txt){ document.getElementById("write-result").innerHTML='<div class="feedback miss">✍️ Schreib erst etwas – zwei Sätze reichen!</div>'; return; }
+  document.getElementById("write-result").innerHTML='<div class="feedback ok">👏 Stark! Lies deinen Text noch einmal langsam: <b>Zeitformen</b> konsistent? Großes <b>I</b>? Satzzeichen? Dann bewerte ehrlich unten.</div>';
+  document.getElementById("write-verdict").classList.remove("hidden");
+  document.getElementById("write-done").classList.add("hidden"); }
+function writeVerdict(v){ record(v,"write"); newPrompt(); }
+
+/* ══════════ TAGESMIX ══════════ */
+function dailyMix(){
+  const r=Math.random();
+  if(r<0.3){ showView("view-vocab"); vocStart(false); }
+  else if(r<0.5){ showView("view-listen"); if(Math.random()<0.5) genDictation(); }
+  else if(r<0.65){ showView("view-read"); readMode("st"); }
+  else if(r<0.8){ showView("view-gram"); [gramVerbs,gramGap,gramTransform][Math.floor(Math.random()*3)](); }
+  else { showView("view-write"); newPrompt(); } }
+
+/* ══════════ WORTSCHATZ (Level-gliedert, klickbar, merkbar) ══════════ */
+function glossaryEntries(){
+  const out=[];
+  LEVELS.forEach(l=>{ (LEVEL_WORDS[l]||[]).forEach(w=>out.push({id:"lv:"+l+":"+w[0].toLowerCase(),en:w[0],de:w[1],note:w[2],lvl:l})); });
+  DECK.forEach(c=>out.push({id:c.id||c.title,en:c.title,de:c.note,note:"Kernkarte – baue damit Sätze.",lvl:"Kern"}));
+  return out; }
+function isMerked(id){ return id.startsWith("my:") || !!loadW().find(w=>("lv:"+getLevel()+":"+w.en.toLowerCase())===id) ||
+  (function(){ const idl=id.split(":"); if(idl[0]!=="lv") return false;
+    return !!loadW().find(w=>w.en.toLowerCase()===idl[2]); })(); }
+function toggleMerk(id,en,de,note){
+  const w=loadW();
+  const exists=w.find(x=>x.en.toLowerCase()===en.toLowerCase());
+  if(exists){ saveW(w.filter(x=>x!==exists)); }
+  else { w.push({en:en,de:de,note:note}); saveW(w); }
+  renderLookup(); renderProgress(); }
+function renderLookup(){ const q=(document.getElementById("lookup-search").value||"").toLowerCase();
+  const all=glossaryEntries().concat(loadW().map(w=>({id:"my:"+w.en.toLowerCase(),en:w.en,de:w.de,note:w.note||"",lvl:"⭐ Meine"})));
+  const list=all.filter(c=>!q || c.en.toLowerCase().includes(q) || c.de.toLowerCase().includes(q));
+  document.getElementById("lookup-list").innerHTML=list.map(c=>
+   '<details class="lookup-item"><summary>'+c.en+
+     ' <span class="lvl">'+c.lvl+'</span>'+
+     (masteryOf(c.id)?'<span class="m">💪</span>':'')+
+     '<button class="addbtn'+(isMerked(c.id)?" on":"")+'" onclick="event.preventDefault();toggleMerk(\''+c.id+'\',\''+c.en.replace(/'/g,"\\'")+'\',\''+c.de.replace(/'/g,"\\'")+'\',\''+c.note.replace(/'/g,"\\'")+'\')">'+
+     (isMerked(c.id)?"✓ im Training":"➕ Merken")+'</button></summary>'+
+     '<div class="de">🇩🇪 '+c.de+'</div>'+
+     (c.note?'<div class="t">📌 '+c.note+'</div>':'')+
+   '</details>').join("") ||
+   '<p class="sub" style="margin-top:10px;">Nichts gefunden.</p>'; }
+
+/* ══════════ Tastatur ══════════ */
+document.addEventListener("keydown",e=>{
+  const vocOpen=!document.getElementById("voc-verdict").classList.contains("hidden");
+  const liOpen=!document.getElementById("listen-verdict").classList.contains("hidden");
+  if(e.key==="Enter"&&!e.shiftKey){
+    if(document.activeElement===document.getElementById("voc-answer")&&!document.getElementById("voc-check").classList.contains("hidden")){e.preventDefault();vocCheck();}
+    if(document.activeElement===document.getElementById("listen-answer")&&!document.getElementById("listen-check").classList.contains("hidden")){e.preventDefault();listenCheck();} }
+  if(vocOpen||liOpen){
+    if(e.key==="1"){ vocOpen?vocVerdict("ok"):listenVerdict("ok"); }
+    if(e.key==="2"){ vocOpen?vocVerdict("mid"):listenVerdict("mid"); }
+    if(e.key==="3"){ vocOpen?vocVerdict("again"):listenVerdict("again"); } }
+});
+renderLevel(); updateDueInfo(); renderStreak();
+if("serviceWorker" in navigator && location.protocol==="https:"){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
+</script>
+</body>
+</html>
