@@ -15,15 +15,17 @@
     --mid:#f6b93b; --ring:rgba(108,92,231,.35);
   }
   *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;}
+  html{height:100%; background:#0f1226;}
   body{
+    min-height:100vh; min-height:100dvh;
     font-family:-apple-system,"Segoe UI",system-ui,sans-serif;
     background:radial-gradient(1200px 800px at 15% 5%, #2b2f63 0%, transparent 55%),
                radial-gradient(1000px 700px at 90% 100%, #45286b 0%, transparent 50%),
                linear-gradient(160deg, var(--bg1), var(--bg2));
     color:var(--ink); display:flex; justify-content:center;
   }
-  .app{width:100%; max-width:560px; min-height:100%; display:flex; flex-direction:column; padding:18px 16px 96px;}
+  .app{width:100%; max-width:560px; min-height:100%; display:flex; flex-direction:column;
+    padding:calc(18px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom));}
   .topbar{display:flex; justify-content:space-between; align-items:center; color:#cfd3ff; font-size:.85rem; margin-bottom:12px; gap:8px; flex-wrap:wrap;}
   .topbar .chip2{background:rgba(255,255,255,.08); padding:6px 12px; border-radius:999px; white-space:nowrap;}
   .view{display:none; animation:pop .3s ease;}
@@ -788,10 +790,29 @@ function voiceScore(v){ const n=(v.name||"").toLowerCase();
   return s; }
 function pickVoice(){ const vs=speechSynthesis.getVoices(); if(!vs.length) return null;
   return vs.map(v=>({v,s:voiceScore(v)})).sort((a,b)=>b.s-a.s)[0].v; }
-function speak(text,rate){ speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text); const voice=pickVoice();
-  if(voice) u.voice=voice; u.rate=rate||0.98; u.pitch=1.0;
-  u.lang=voice?voice.lang:getVoicePref(); speechSynthesis.speak(u); }
+function ttsStatus(msg){ let d=document.getElementById('tts-status');
+  if(!d){ d=document.createElement('div'); d.id='tts-status'; document.body.appendChild(d); }
+  d.style.cssText='position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:rgba(20,23,50,.92);color:#fff;padding:9px 16px;border-radius:99px;font-size:.8rem;z-index:99999;max-width:90%;text-align:center;';
+  d.textContent=msg;
+  if(msg){ setTimeout(function(){ if(d && d.textContent===msg) d.remove(); },3500); } }
+function speak(text,rate){
+  if(!("speechSynthesis" in window)){ ttsStatus("⚠️ Dieser Browser unterstützt keine Sprachausgabe"); return; }
+  speechSynthesis.cancel();
+  /* iOS-Fix: nach cancel() kurz warten, sonst schluckt iOS die Aussprache */
+  setTimeout(function(){
+    var u=new SpeechSynthesisUtterance(text);
+    var v=pickVoice();
+    if(v){ u.voice=v; u.lang=v.lang; } else { u.lang=getVoicePref(); }
+    u.rate=rate||0.98; u.pitch=1.0;
+    u.onstart=function(){ ttsStatus("🔊 Sprachausgabe läuft…"); };
+    u.onerror=function(){ ttsStatus("⚠️ Sprachausgabe blockiert – prüfe den Stummschalter (orangefarbener Schalter an der Seite!) und die Lautstärke"); };
+    speechSynthesis.speak(u);
+    setTimeout(function(){
+      if(!speechSynthesis.speaking && !speechSynthesis.pending){
+        ttsStatus("⚠️ Kein Ton? 1) Stummschalter an der Seite des iPhones (orange = aus!) 2) Lautstärke-Taste drücken während der Wiedergabe");
+      }
+    },1200);
+  },120); }
 function playSentence(rate){ speak(listenTarget,rate); }
 if("speechSynthesis" in window) speechSynthesis.onvoiceschanged=()=>{};
 const GSUBJ=["I","We","My parents","My friends","The children","You","My brother and I","The students"];
