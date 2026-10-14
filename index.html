@@ -172,6 +172,7 @@
         <button class="btn btn-primary btn-small" onclick="playSentence()">▶️ Anhören</button>
         <button class="btn btn-ghost btn-small" onclick="playSentence(0.6)">🐢 Langsamer</button>
         <button class="btn btn-ghost btn-small" onclick="genDictation()">🎲 Zufallssatz</button>
+        <button class="btn btn-ghost btn-small" onclick="playTestTone()">🔔 Testton</button>
       </div>
       <textarea id="listen-answer" placeholder="Was hast du gehört?" style="margin-top:14px;" spellcheck="false"></textarea>
       <div class="btn-row"><button class="btn btn-primary" id="listen-check" onclick="listenCheck()">🔎 Prüfen</button></div>
@@ -801,7 +802,8 @@ function speak(text,rate){
   /* iOS-Fix: nach cancel() kurz warten, sonst schluckt iOS die Aussprache */
   setTimeout(function(){
     var u=new SpeechSynthesisUtterance(text);
-    var v=pickVoice();
+    var ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    var v=ios? null : pickVoice();   /* iOS: System-Stimme nutzen, voice setzen kann stumm schalten */
     if(v){ u.voice=v; u.lang=v.lang; } else { u.lang=getVoicePref(); }
     u.rate=rate||0.98; u.pitch=1.0;
     u.onstart=function(){ ttsStatus("🔊 Sprachausgabe läuft…"); };
@@ -814,6 +816,19 @@ function speak(text,rate){
     },1200);
   },120); }
 function playSentence(rate){ speak(listenTarget,rate); }
+function playTestTone(){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC){ ttsStatus("⚠️ Audio-Test wird von diesem Browser nicht unterstützt"); return; }
+    var ctx=new AC();
+    var osc=ctx.createOscillator(); var gain=ctx.createGain();
+    osc.frequency.value=600; gain.gain.value=0.25;
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start();
+    ttsStatus("🔔 Testton spielt (0,8 Sekunden)…");
+    setTimeout(function(){ osc.stop(); ctx.close();
+      ttsStatus("Hörbar? → Ton OK, Problem sitzt an der Stimme · Nicht hörbar? → Geräte-Ton prüfen (Stummschalter/Lautstärke/Bluetooth)"); }, 800);
+  }catch(e){ ttsStatus("⚠️ Testton-Fehler: "+e.message); } }
 if("speechSynthesis" in window) speechSynthesis.onvoiceschanged=()=>{};
 const GSUBJ=["I","We","My parents","My friends","The children","You","My brother and I","The students"];
 const GADV=["usually","often","never","sometimes","rarely"];
